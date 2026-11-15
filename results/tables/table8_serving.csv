@@ -1,0 +1,37 @@
+family,model,task,items_per_s,p50_ms,p95_ms,p99_ms,usd_per_million_items,mean_input_tokens,gpu,torch
+api,gemini35_flash_lite,t1_rag_hallucination,,,,,168.28,,,
+api,gemini4_argon,t1_rag_hallucination,,,,,1162.93,,,
+api,gpt61_sol,t1_rag_hallucination,,,,,1160.45,,,
+api,gpt6_luna,t1_rag_hallucination,,,,,54.99,,,
+api,jev,t1_rag_hallucination,,,,,44.51,,,
+decoder,gemma4_e2b,t1_rag_hallucination,11.47,139.3,203.2,229.3,8.861,1124.7,NVIDIA RTX A6000,2.15.0+cu132
+decoder,gemma4_e4b,t1_rag_hallucination,6.57,227.9,349.5,382.0,15.464,1124.7,NVIDIA RTX A6000,2.15.0+cu132
+decoder,qwen35_2b,t1_rag_hallucination,20.68,88.5,108.7,112.2,4.917,1128.7,NVIDIA RTX A6000,2.15.0+cu132
+decoder,qwen35_4b,t1_rag_hallucination,7.44,159.6,236.2,253.6,13.666,1128.7,NVIDIA RTX A6000,2.15.0+cu132
+encoder,deberta_v3_large,t1_rag_hallucination,66.94,80.6,84.5,85.5,1.519,468.2,NVIDIA RTX A6000,2.15.0+cu132
+encoder,modernbert_base,t1_rag_hallucination,159.57,38.7,42.2,52.8,0.637,695.6,NVIDIA RTX A6000,2.15.0+cu132
+encoder,modernbert_large,t1_rag_hallucination,80.68,45.2,49.8,51.5,1.26,695.6,NVIDIA RTX A6000,2.15.0+cu132
+api,gemini35_flash_lite,t2_response_safety,,,,,68.39,,,
+api,gemini4_argon,t2_response_safety,,,,,532.08,,,
+api,gpt61_sol,t2_response_safety,,,,,486.66,,,
+api,gpt6_luna,t2_response_safety,,,,,22.81,,,
+api,jev,t2_response_safety,,,,,19.33,,,
+decoder,gemma4_e2b,t2_response_safety,33.64,115.1,141.0,145.8,3.022,430.6,NVIDIA RTX A6000,2.15.0+cu132
+decoder,gemma4_e4b,t2_response_safety,18.56,140.9,151.6,163.0,5.477,430.6,NVIDIA RTX A6000,2.15.0+cu132
+decoder,qwen35_2b,t2_response_safety,55.47,90.5,93.3,95.2,1.833,428.5,NVIDIA RTX A6000,2.15.0+cu132
+decoder,qwen35_4b,t2_response_safety,20.22,119.0,123.0,127.0,5.028,428.5,NVIDIA RTX A6000,2.15.0+cu132
+encoder,deberta_v3_large,t2_response_safety,487.09,81.2,83.6,86.3,0.209,88.3,NVIDIA RTX A6000,2.15.0+cu132
+encoder,modernbert_base,t2_response_safety,1249.03,38.0,41.6,43.8,0.081,90.7,NVIDIA RTX A6000,2.15.0+cu132
+encoder,modernbert_large,t2_response_safety,619.96,44.1,47.5,60.6,0.164,90.7,NVIDIA RTX A6000,2.15.0+cu132
+api,gemini35_flash_lite,t3_implicit_toxicity,,,,,54.12,,,
+api,gemini4_argon,t3_implicit_toxicity,,,,,421.28,,,
+api,gpt61_sol,t3_implicit_toxicity,,,,,401.6,,,
+api,gpt6_luna,t3_implicit_toxicity,,,,,18.35,,,
+api,jev,t3_implicit_toxicity,,,,,16.36,,,
+decoder,gemma4_e2b,t3_implicit_toxicity,39.27,107.5,117.9,120.4,2.589,363.2,NVIDIA RTX A6000,2.15.0+cu132
+decoder,gemma4_e4b,t3_implicit_toxicity,21.63,140.6,152.9,158.1,4.699,363.2,NVIDIA RTX A6000,2.15.0+cu132
+decoder,qwen35_2b,t3_implicit_toxicity,62.09,99.1,112.5,113.6,1.637,367.2,NVIDIA RTX A6000,2.15.0+cu132
+decoder,qwen35_4b,t3_implicit_toxicity,26.4,123.5,131.5,134.0,3.852,367.2,NVIDIA RTX A6000,2.15.0+cu132
+encoder,deberta_v3_large,t3_implicit_toxicity,544.06,81.9,87.2,88.6,0.187,22.9,NVIDIA RTX A6000,2.15.0+cu132
+encoder,modernbert_base,t3_implicit_toxicity,1819.01,35.2,41.0,47.3,0.056,23.6,NVIDIA RTX A6000,2.15.0+cu132
+encoder,modernbert_large,t3_implicit_toxicity,880.59,42.3,44.4,45.6,0.115,23.6,NVIDIA RTX A6000,2.15.0+cu132

@@ -1,0 +1,2 @@
+# Open-teacher labelling and serving benchmarks only (not needed for Gate A or student sweeps).
+vllm>=0.11

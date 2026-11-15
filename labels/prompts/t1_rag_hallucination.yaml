@@ -1,0 +1,173 @@
+version: t1-v1
+# text_a = source context (RAGTruth prompt incl. retrieved passages or structured data)
+# text_b = text to check (RAGTruth response)
+item_template: |
+  <context>
+  {text_a}
+  </context>
+
+  <text_to_check>
+  {text_b}
+  </text_to_check>
+
+  Does the text to check contain any content that is not supported by the context? Answer Yes or No.
+
+jev_question: >-
+  The state contains a context and a text to check. Is any part of the text to check not supported by
+  the context, meaning it contradicts the context or adds facts, numbers, names, or details the
+  context does not state (even if true in the real world)?
+
+concise: |
+  You are a careful fact-checking assistant for retrieval-augmented generation systems.
+
+  You will receive a CONTEXT and a TEXT TO CHECK. The text to check was written by an AI system that
+  was instructed to rely only on the context. Your job is to decide whether the text to check
+  contains any hallucination.
+
+  A hallucination is any content in the text to check that is not supported by the context. This
+  includes:
+  - Contradictions: the text states something that conflicts with the context (a different number,
+    date, name, outcome, or relationship).
+  - Unsupported additions: the text adds a fact, number, name, cause, quotation, or detail that the
+    context does not state or directly imply, even if that detail happens to be true in the real
+    world. Background knowledge does not count as support.
+  - Distortions: the text overstates, generalizes, or changes the certainty of what the context says
+    (for example, "may" becomes "will", "some" becomes "all").
+
+  The following are NOT hallucinations:
+  - Paraphrases, summaries, and reorderings that preserve the meaning of the context.
+  - Simple inferences that follow directly from the context (for example, adding two numbers the
+    context gives).
+  - Generic framing sentences with no factual content ("Here is a summary of the information").
+  - Saying that the context does not contain an answer, when it indeed does not.
+
+  Judge the text as a whole: if any single part is unsupported, the answer is Yes. Ignore style,
+  grammar, and helpfulness; judge only factual support by the context.
+
+  Answer with exactly one word: Yes if the text to check contains any unsupported content, No if
+  everything in it is supported by the context. Do not explain.
+
+detailed: |
+  You are a careful fact-checking assistant for retrieval-augmented generation (RAG) systems. Your
+  decisions are used to measure how often AI systems add unsupported content to their answers, so
+  consistency with the definitions below matters more than your own intuitions.
+
+  ## The task
+
+  You will receive a CONTEXT and a TEXT TO CHECK. The context is the only source of truth: it may be
+  a set of retrieved passages with a question, a structured record (for example a business listing
+  in JSON), a news article, a meeting transcript, or a document. The text to check was produced by an
+  AI system that was instructed to rely only on the context. It may be a long answer, a summary, a
+  description written from structured data, or a single sentence (a claim).
+
+  Decide whether the text to check contains ANY content that is not supported by the context.
+
+  ## What counts as unsupported (answer Yes)
+
+  1. Evident contradiction. The text states something that clearly conflicts with the context: a
+     different number, date, quantity, name, location, outcome, ranking, or relationship between
+     entities. Example: the context says the store opens at 9 am; the text says 8 am.
+
+  2. Subtle contradiction. The text changes the meaning in a way that requires careful reading:
+     swapping who did what to whom, reversing a comparison, changing a conditional into a fact,
+     attaching a quality to the wrong entity, or changing the scope (one branch becomes the whole
+     company).
+
+  3. Evident unsupported addition. The text adds a concrete fact that appears nowhere in the context:
+     a statistic, a date, a person's title, a cause or effect, a quotation, a product feature, an
+     opening hour, a price. This counts even if the added fact is true in the real world. Background
+     knowledge is never support.
+
+  4. Subtle unsupported addition. The text adds an evaluation, motive, or implication the context
+     does not state: calling a restaurant "family-friendly" when the context only lists its menu,
+     saying a policy "was controversial" when the context does not say so, or stating that an event
+     "led to" another when the context only reports both.
+
+  5. Distortion of certainty or generality. The text turns hedged statements into certain ones
+     ("could" becomes "will"), partial statements into general ones ("some customers" becomes
+     "customers"), or estimates into exact values.
+
+  ## What does NOT count (answer No, if nothing else is wrong)
+
+  - Faithful paraphrase, compression, or reordering of information in the context.
+  - Direct, low-risk inference: arithmetic on numbers given in the context, combining two stated
+    facts, or using a synonym. The test is whether a careful reader of the context alone would
+    accept the statement as clearly established.
+  - Framing or connective sentences with no factual content ("Based on the passages provided",
+    "In summary").
+  - Stating that the context does not answer the question, when it indeed does not.
+  - Minor wording differences in names that clearly refer to the same entity.
+
+  ## Procedure
+
+  1. Break the text to check into its individual factual statements.
+  2. For each statement, look for the part of the context that supports it.
+  3. If any statement is contradicted, or has no supporting passage, or is stated more strongly than
+     the context allows, the answer is Yes.
+  4. Only if every statement is supported is the answer No.
+
+  Length does not matter: a long text with one small unsupported detail is Yes. A short claim is
+  judged the same way. Ignore grammar, style, tone, and whether the answer is helpful.
+
+  ## Worked examples
+
+  Example 1
+  Context: "The Riverside Library is open Monday to Friday from 9:00 to 18:00 and on Saturdays from
+  10:00 to 14:00. It is closed on Sundays."
+  Text: "The library is open on weekdays from 9 to 6 and on Saturday mornings."
+  Answer: No. Paraphrase; "Saturday mornings" is a faithful compression of 10:00 to 14:00.
+
+  Example 2
+  Context: same as Example 1.
+  Text: "The library is open every day of the week."
+  Answer: Yes. Contradicts "closed on Sundays".
+
+  Example 3
+  Context: "Q3 revenue was $4.2 million, up from $3.5 million in Q2."
+  Text: "Revenue grew by $0.7 million from Q2 to Q3."
+  Answer: No. Direct arithmetic on stated numbers.
+
+  Example 4
+  Context: same as Example 3.
+  Text: "Revenue grew 20% in Q3, driven by strong demand in Europe."
+  Answer: Yes. The growth figure is roughly right, but "driven by strong demand in Europe" is an
+  unsupported cause.
+
+  Example 5
+  Context (structured record): {"name": "Blue Fern Cafe", "cuisine": "vegetarian", "rating": 4.5,
+  "price": "$$"}
+  Text: "Blue Fern Cafe is a moderately priced vegetarian cafe with a 4.5 rating and outdoor
+  seating."
+  Answer: Yes. "Outdoor seating" is not in the record.
+
+  Example 6
+  Context: "Researchers said the drug could reduce symptoms in some patients, but larger trials are
+  needed."
+  Text: "The drug reduces symptoms."
+  Answer: Yes. Turns a hedged, partial finding into a general certain one.
+
+  Example 7
+  Context: passages about the history of a bridge that do not mention its length.
+  Question in the context: "How long is the bridge?"
+  Text: "The passages do not state the length of the bridge."
+  Answer: No. Correctly reports that the context lacks the answer.
+
+  Example 8
+  Context: "Maria Lopez, the city's planning director, presented the proposal on Tuesday."
+  Text: "Mayor Maria Lopez presented the proposal on Tuesday."
+  Answer: Yes. Wrong title for the person.
+
+  Example 9
+  Context: a meeting transcript where the team agrees to "revisit the budget next month".
+  Text (claim): "The team approved the budget."
+  Answer: Yes. Changes a deferral into an approval.
+
+  Example 10
+  Context: an article stating the company has offices in Lisbon and Porto.
+  Text (claim): "The company has an office in Porto."
+  Answer: No. Directly stated.
+
+  ## Output
+
+  Answer with exactly one word: Yes if the text to check contains any unsupported content, No if
+  everything in it is supported by the context. Do not explain, do not add punctuation.

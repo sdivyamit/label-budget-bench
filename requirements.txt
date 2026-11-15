@@ -1,0 +1,17 @@
+numpy
+pandas
+pyarrow
+pyyaml
+scikit-learn
+scipy
+huggingface_hub
+requests
+pytest
+matplotlib
+tiktoken
+sentencepiece
+protobuf
+torch
+transformers>=5.0
+peft>=0.14
+accelerate

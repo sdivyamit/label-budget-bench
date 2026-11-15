@@ -1,0 +1,26 @@
+# Appendix H: primary comparisons, Holm-corrected together (plan §6.5: at most 12).
+# STATUS: FIXED 14 Nov 2026 (approved by S. Rajendran), before the final numbers were read. Drafted 13 Nov,
+# after about 84% of the trained runs and all hosted-model results had been seen, so the paper states both
+# dates and does not call the list pre-registered. On fixing, H1c and H1d were switched from PR-AUC to F1 at
+# 0.5: the hosted LLMs return verdicts only (two distinct scores), so their PR-AUC is not comparable.
+#
+# Cell syntax: family/model/labels/N ("top" = the largest N run for that cell), or api/<model> (concise
+# prompt). Differences are a - b on the seed mean; hosted models are only on test and shift_api.
+status: fixed 2026-11-14
+metric_default: pr_auc
+comparisons:
+  # H1 / RQ1: families against each other and against the frontier band
+  - {id: H1a, task: t1_rag_hallucination, eval_set: test,      a: decoder/qwen35_2b/gold/top, b: encoder/modernbert_large/gold/top}
+  - {id: H1b, task: t1_rag_hallucination, eval_set: shift,     a: decoder/qwen35_2b/gold/top, b: encoder/modernbert_large/gold/top}
+  - {id: H1c, task: t2_response_safety,   eval_set: test,      metric: f1_at_05, a: encoder/modernbert_large/gold/top, b: api/gpt61_sol}
+  - {id: H1d, task: t2_response_safety,   eval_set: shift_api, metric: f1_at_05, a: decoder/qwen35_4b/gold/top, b: api/gpt61_sol}
+  - {id: H1e, task: t3_implicit_toxicity, eval_set: shift,     a: decoder/qwen35_2b/gold/top, b: encoder/modernbert_large/gold/top}
+  # H2 / RQ2: teacher labels against gold at the same N, and the gold anchor
+  - {id: H2a, task: t2_response_safety,   eval_set: test,      a: encoder/modernbert_large/frontier_teacher/5000, b: encoder/modernbert_large/gold/5000}
+  - {id: H2b, task: t2_response_safety,   eval_set: test,      a: decoder/qwen35_2b/frontier_teacher/5000, b: decoder/qwen35_2b/gold/5000}
+  - {id: H2c, task: t2_response_safety,   eval_set: test,      a: encoder/modernbert_large/mix1000_open_teacher/top, b: encoder/modernbert_large/gold/top}
+  - {id: H2d, task: t3_implicit_toxicity, eval_set: test,      a: decoder/qwen35_2b/open_teacher/top, b: decoder/qwen35_2b/gold/top}
+  # H3 / RQ3: calibration (ECE, raw scores) by label source and family
+  - {id: H3a, task: t2_response_safety,   eval_set: test,      metric: ece, a: encoder/modernbert_large/frontier_teacher/5000, b: encoder/modernbert_large/gold/5000}
+  - {id: H3b, task: t2_response_safety,   eval_set: shift_api, metric: ece, a: decoder/qwen35_2b/gold/top, b: encoder/modernbert_large/gold/top}
+  - {id: H3c, task: t1_rag_hallucination, eval_set: shift,     metric: ece, a: decoder/qwen35_2b/gold/top, b: encoder/modernbert_large/gold/top}

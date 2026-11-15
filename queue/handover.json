@@ -1,0 +1,816 @@
+[
+ {
+  "ts": "2026-11-12T20:27:53+0530",
+  "before": {
+   "0": 41.70112771779959,
+   "1": 46.44763688817985,
+   "2": 47.15065416064855,
+   "3": 64.42466595036699,
+   "4": 41.705264922237575,
+   "5": 72.78097392733451,
+   "6": 41.98984717706337,
+   "7": 58.408328075615835
+  },
+  "after": {
+   "0": 51.38775172808404,
+   "1": 50.604038490340415,
+   "2": 50.77545924139488,
+   "3": 53.949361168868606,
+   "4": 50.76255193442656,
+   "5": 53.50132930213249,
+   "6": 50.82954208252288,
+   "7": 52.798464871476405
+  },
+  "moves": [
+   {
+    "id": "t2_response_safety__qwen35_2b__frontier_teacher__n5000__s2__abl-norefusal",
+    "owner": 5,
+    "to": 0,
+    "hours": 0.435
+   },
+   {
+    "id": "t2_response_safety__qwen35_2b__frontier_teacher__n1000__s0__abl-norefusal",
+    "owner": 5,
+    "to": 4,
+    "hours": 0.188
+   },
+   {
+    "id": "t2_response_safety__modernbert_large__frontier_teacher__n5000__s2__abl-norefusal",
+    "owner": 5,
+    "to": 4,
+    "hours": 0.067
+   },
+   {
+    "id": "t2_response_safety__modernbert_large__frontier_teacher__n1000__s0__abl-norefusal",
+    "owner": 5,
+    "to": 4,
+    "hours": 0.026
+   },
+   {
+    "id": "t1_rag_hallucination__qwen35_2b__gold__n1000__s1__abl-honest",
+    "owner": 5,
+    "to": 4,
+    "hours": 0.553
+   },
+   {
+    "id": "t1_rag_hallucination__qwen35_2b__gold__n250__s2__abl-honest",
+    "owner": 5,
+    "to": 6,
+    "hours": 0.262
+   },
+   {
+    "id": "t1_rag_hallucination__qwen35_2b__gold__n100__s1__abl-honest",
+    "owner": 5,
+    "to": 0,
+    "hours": 0.204
+   },
+   {
+    "id": "t1_rag_hallucination__modernbert_large__gold__n1000__s4__abl-honest",
+    "owner": 5,
+    "to": 6,
+    "hours": 0.128
+   },
+   {
+    "id": "t1_rag_hallucination__modernbert_large__gold__n1000__s3__abl-honest",
+    "owner": 5,
+    "to": 0,
+    "hours": 0.126
+   },
+   {
+    "id": "t1_rag_hallucination__modernbert_large__gold__n500__s2__abl-honest",
+    "owner": 5,
+    "to": 6,
+    "hours": 0.075
+   },
+   {
+    "id": "t3_implicit_toxicity__qwen35_2b__gold__n500__s4__abl-honest",
+    "owner": 5,
+    "to": 6,
+    "hours": 0.074
+   },
+   {
+    "id": "t3_implicit_toxicity__qwen35_2b__gold__n500__s3__abl-honest",
+    "owner": 5,
+    "to": 0,
+    "hours": 0.074
+   },
+   {
+    "id": "t3_implicit_toxicity__modernbert_large__gold__n1000__s4__abl-honest",
+    "owner": 5,
+    "to": 6,
+    "hours": 0.011
+   },
+   {
+    "id": "t3_implicit_toxicity__modernbert_large__gold__n1000__s3__abl-honest",
+    "owner": 5,
+    "to": 4,
+    "hours": 0.011
+   },
+   {
+    "id": "t3_implicit_toxicity__modernbert_large__gold__n500__s0__abl-honest",
+    "owner": 5,
+    "to": 6,
+    "hours": 0.006
+   },
+   {
+    "id": "t2_response_safety__qwen35_2b__gold__n500__s0__abl-honest",
+    "owner": 5,
+    "to": 0,
+    "hours": 0.126
+   },
+   {
+    "id": "t2_response_safety__modernbert_large__gold__n1000__s2__abl-honest",
+    "owner": 5,
+    "to": 6,
+    "hours": 0.026
+   },
+   {
+    "id": "t2_response_safety__modernbert_large__gold__n250__s1__abl-honest",
+    "owner": 5,
+    "to": 4,
+    "hours": 0.01
+   },
+   {
+    "id": "t2_response_safety__modernbert_large__gold__n100__s2__abl-honest",
+    "owner": 5,
+    "to": 4,
+    "hours": 0.009
+   },
+   {
+    "id": "t1_rag_hallucination__qwen35_2b__mix1000_frontier_teacher__n5000__s0__abl-goldx2",
+    "owner": 5,
+    "to": 4,
+    "hours": 1.329
+   },
+   {
+    "id": "t1_rag_hallucination__qwen35_2b__mix1000_open_teacher__n8651__s0__abl-goldx2",
+    "owner": 5,
+    "to": 6,
+    "hours": 1.526
+   },
+   {
+    "id": "t1_rag_hallucination__modernbert_large__mix1000_frontier_teacher__n5000__s1__abl-goldx2",
+    "owner": 5,
+    "to": 0,
+    "hours": 0.333
+   },
+   {
+    "id": "t1_rag_hallucination__modernbert_large__mix1000_open_teacher__n8651__s1__abl-goldx2",
+    "owner": 5,
+    "to": 0,
+    "hours": 0.393
+   },
+   {
+    "id": "t3_implicit_toxicity__qwen35_2b__mix1000_frontier_teacher__n5000__s1__abl-goldx2",
+    "owner": 5,
+    "to": 0,
+    "hours": 0.295
+   },
+   {
+    "id": "t3_implicit_toxicity__modernbert_large__mix250_frontier_teacher__n5000__s2__abl-goldx2",
+    "owner": 5,
+    "to": 0,
+    "hours": 0.031
+   },
+   {
+    "id": "t3_implicit_toxicity__modernbert_large__mix250_open_teacher__n5920__s2__abl-goldx2",
+    "owner": 5,
+    "to": 0,
+    "hours": 0.025
+   },
+   {
+    "id": "t2_response_safety__modernbert_large__mix250_frontier_teacher__n5000__s0__abl-goldx2",
+    "owner": 5,
+    "to": 0,
+    "hours": 0.071
+   },
+   {
+    "id": "t2_response_safety__modernbert_large__mix250_open_teacher__n20000__s0__abl-goldx2",
+    "owner": 5,
+    "to": 0,
+    "hours": 0.174
+   },
+   {
+    "id": "t1_rag_hallucination__deberta_v3_large__gold__n1000__s3__abl-chunk",
+    "owner": 5,
+    "to": 4,
+    "hours": 0.116
+   },
+   {
+    "id": "t1_rag_hallucination__deberta_v3_large__gold__n1000__s0__abl-chunk",
+    "owner": 5,
+    "to": 0,
+    "hours": 0.116
+   },
+   {
+    "id": "t1_rag_hallucination__deberta_v3_large__gold__n500__s4__abl-chunk",
+    "owner": 5,
+    "to": 4,
+    "hours": 0.07
+   },
+   {
+    "id": "t1_rag_hallucination__deberta_v3_large__gold__n500__s2__abl-chunk",
+    "owner": 5,
+    "to": 4,
+    "hours": 0.07
+   },
+   {
+    "id": "t1_rag_hallucination__deberta_v3_large__gold__n500__s1__abl-chunk",
+    "owner": 5,
+    "to": 6,
+    "hours": 0.07
+   },
+   {
+    "id": "t1_rag_hallucination__deberta_v3_large__gold__n250__s4__abl-chunk",
+    "owner": 5,
+    "to": 0,
+    "hours": 0.046
+   },
+   {
+    "id": "t1_rag_hallucination__deberta_v3_large__gold__n250__s2__abl-chunk",
+    "owner": 5,
+    "to": 0,
+    "hours": 0.046
+   },
+   {
+    "id": "t1_rag_hallucination__deberta_v3_large__gold__n250__s1__abl-chunk",
+    "owner": 5,
+    "to": 4,
+    "hours": 0.046
+   },
+   {
+    "id": "t1_rag_hallucination__qwen35_2b__gold__n5000__s1__abl-sft",
+    "owner": 5,
+    "to": 6,
+    "hours": 1.348
+   },
+   {
+    "id": "t3_implicit_toxicity__qwen35_2b__gold__n5000__s1__abl-sft",
+    "owner": 5,
+    "to": 0,
+    "hours": 0.295
+   },
+   {
+    "id": "t1_rag_hallucination__gemma4_e2b__gold__n5000__s1__abl-head",
+    "owner": 5,
+    "to": 4,
+    "hours": 2.815
+   },
+   {
+    "id": "t1_rag_hallucination__gemma4_e2b__gold__n5000__s0__abl-head",
+    "owner": 5,
+    "to": 0,
+    "hours": 2.752
+   },
+   {
+    "id": "t3_implicit_toxicity__gemma4_e2b__gold__n5000__s2__abl-head",
+    "owner": 5,
+    "to": 6,
+    "hours": 0.752
+   },
+   {
+    "id": "t1_rag_hallucination__qwen35_4b__gold__n8651__s2",
+    "owner": 5,
+    "to": 6,
+    "hours": 4.15
+   },
+   {
+    "id": "t1_rag_hallucination__qwen35_2b__gold__n1000__s2__abl-honest",
+    "owner": 3,
+    "to": 1,
+    "hours": 0.548
+   },
+   {
+    "id": "t1_rag_hallucination__qwen35_2b__gold__n250__s1__abl-honest",
+    "owner": 3,
+    "to": 1,
+    "hours": 0.263
+   },
+   {
+    "id": "t1_rag_hallucination__qwen35_2b__gold__n100__s2__abl-honest",
+    "owner": 3,
+    "to": 4,
+    "hours": 0.205
+   },
+   {
+    "id": "t1_rag_hallucination__modernbert_large__gold__n1000__s0__abl-honest",
+    "owner": 3,
+    "to": 2,
+    "hours": 0.133
+   },
+   {
+    "id": "t1_rag_hallucination__modernbert_large__gold__n500__s1__abl-honest",
+    "owner": 3,
+    "to": 4,
+    "hours": 0.076
+   },
+   {
+    "id": "t3_implicit_toxicity__qwen35_2b__gold__n500__s0__abl-honest",
+    "owner": 3,
+    "to": 0,
+    "hours": 0.074
+   },
+   {
+    "id": "t3_implicit_toxicity__modernbert_large__gold__n1000__s0__abl-honest",
+    "owner": 3,
+    "to": 1,
+    "hours": 0.011
+   },
+   {
+    "id": "t3_implicit_toxicity__modernbert_large__gold__n500__s4__abl-honest",
+    "owner": 3,
+    "to": 1,
+    "hours": 0.006
+   },
+   {
+    "id": "t3_implicit_toxicity__modernbert_large__gold__n500__s3__abl-honest",
+    "owner": 3,
+    "to": 1,
+    "hours": 0.006
+   },
+   {
+    "id": "t2_response_safety__qwen35_2b__gold__n500__s4__abl-honest",
+    "owner": 3,
+    "to": 1,
+    "hours": 0.126
+   },
+   {
+    "id": "t2_response_safety__qwen35_2b__gold__n500__s3__abl-honest",
+    "owner": 3,
+    "to": 2,
+    "hours": 0.126
+   },
+   {
+    "id": "t2_response_safety__modernbert_large__gold__n1000__s1__abl-honest",
+    "owner": 3,
+    "to": 4,
+    "hours": 0.026
+   },
+   {
+    "id": "t2_response_safety__modernbert_large__gold__n250__s2__abl-honest",
+    "owner": 3,
+    "to": 0,
+    "hours": 0.01
+   },
+   {
+    "id": "t2_response_safety__modernbert_large__gold__n100__s1__abl-honest",
+    "owner": 3,
+    "to": 4,
+    "hours": 0.009
+   },
+   {
+    "id": "t1_rag_hallucination__qwen35_2b__mix250_open_teacher__n8651__s0__abl-goldx2",
+    "owner": 3,
+    "to": 0,
+    "hours": 1.51
+   },
+   {
+    "id": "t1_rag_hallucination__modernbert_large__mix1000_frontier_teacher__n5000__s2__abl-goldx2",
+    "owner": 3,
+    "to": 4,
+    "hours": 0.34
+   },
+   {
+    "id": "t1_rag_hallucination__modernbert_large__mix1000_open_teacher__n8651__s2__abl-goldx2",
+    "owner": 3,
+    "to": 1,
+    "hours": 0.401
+   },
+   {
+    "id": "t3_implicit_toxicity__qwen35_2b__mix1000_frontier_teacher__n5000__s2__abl-goldx2",
+    "owner": 3,
+    "to": 2,
+    "hours": 0.295
+   },
+   {
+    "id": "t3_implicit_toxicity__qwen35_2b__mix250_open_teacher__n5920__s0__abl-goldx2",
+    "owner": 3,
+    "to": 4,
+    "hours": 0.239
+   },
+   {
+    "id": "t3_implicit_toxicity__modernbert_large__mix1000_frontier_teacher__n5000__s0__abl-goldx2",
+    "owner": 3,
+    "to": 2,
+    "hours": 0.031
+   },
+   {
+    "id": "t3_implicit_toxicity__modernbert_large__mix250_frontier_teacher__n5000__s1__abl-goldx2",
+    "owner": 3,
+    "to": 2,
+    "hours": 0.031
+   },
+   {
+    "id": "t3_implicit_toxicity__modernbert_large__mix250_open_teacher__n5920__s1__abl-goldx2",
+    "owner": 3,
+    "to": 2,
+    "hours": 0.025
+   },
+   {
+    "id": "t2_response_safety__qwen35_2b__mix1000_open_teacher__n20000__s0__abl-goldx2",
+    "owner": 3,
+    "to": 2,
+    "hours": 1.039
+   },
+   {
+    "id": "t1_rag_hallucination__deberta_v3_large__gold__n2000__s4__abl-chunk",
+    "owner": 3,
+    "to": 1,
+    "hours": 0.135
+   },
+   {
+    "id": "t1_rag_hallucination__deberta_v3_large__gold__n2000__s2__abl-chunk",
+    "owner": 3,
+    "to": 4,
+    "hours": 0.135
+   },
+   {
+    "id": "t1_rag_hallucination__deberta_v3_large__gold__n2000__s1__abl-chunk",
+    "owner": 3,
+    "to": 1,
+    "hours": 0.135
+   },
+   {
+    "id": "t1_rag_hallucination__deberta_v3_large__gold__n100__s4__abl-chunk",
+    "owner": 3,
+    "to": 4,
+    "hours": 0.032
+   },
+   {
+    "id": "t1_rag_hallucination__deberta_v3_large__gold__n100__s2__abl-chunk",
+    "owner": 3,
+    "to": 4,
+    "hours": 0.032
+   },
+   {
+    "id": "t1_rag_hallucination__deberta_v3_large__gold__n100__s1__abl-chunk",
+    "owner": 3,
+    "to": 1,
+    "hours": 0.032
+   },
+   {
+    "id": "t1_rag_hallucination__qwen35_2b__gold__n5000__s0__abl-sft",
+    "owner": 3,
+    "to": 4,
+    "hours": 1.325
+   },
+   {
+    "id": "t3_implicit_toxicity__qwen35_2b__gold__n5000__s0__abl-sft",
+    "owner": 3,
+    "to": 1,
+    "hours": 0.295
+   },
+   {
+    "id": "t2_response_safety__qwen35_2b__gold__n5000__s2__abl-sft",
+    "owner": 3,
+    "to": 1,
+    "hours": 0.437
+   },
+   {
+    "id": "t2_response_safety__gemma4_e2b__gold__n5000__s2__abl-head",
+    "owner": 3,
+    "to": 2,
+    "hours": 0.883
+   },
+   {
+    "id": "t1_rag_hallucination__qwen35_4b__gold__n1000__s0",
+    "owner": 3,
+    "to": 0,
+    "hours": 1.506
+   },
+   {
+    "id": "t2_response_safety__qwen35_2b__frontier_teacher__n5000__s1__abl-norefusal",
+    "owner": 7,
+    "to": 1,
+    "hours": 0.432
+   },
+   {
+    "id": "t2_response_safety__qwen35_2b__frontier_teacher__n1000__s3__abl-norefusal",
+    "owner": 7,
+    "to": 1,
+    "hours": 0.187
+   },
+   {
+    "id": "t2_response_safety__modernbert_large__frontier_teacher__n5000__s1__abl-norefusal",
+    "owner": 7,
+    "to": 4,
+    "hours": 0.069
+   },
+   {
+    "id": "t2_response_safety__modernbert_large__frontier_teacher__n1000__s3__abl-norefusal",
+    "owner": 7,
+    "to": 1,
+    "hours": 0.026
+   },
+   {
+    "id": "t1_rag_hallucination__qwen35_2b__gold__n500__s1__abl-honest",
+    "owner": 7,
+    "to": 1,
+    "hours": 0.355
+   },
+   {
+    "id": "t1_rag_hallucination__modernbert_large__gold__n250__s1__abl-honest",
+    "owner": 7,
+    "to": 4,
+    "hours": 0.048
+   },
+   {
+    "id": "t1_rag_hallucination__modernbert_large__gold__n100__s2__abl-honest",
+    "owner": 7,
+    "to": 4,
+    "hours": 0.041
+   },
+   {
+    "id": "t3_implicit_toxicity__qwen35_2b__gold__n1000__s0__abl-honest",
+    "owner": 7,
+    "to": 4,
+    "hours": 0.118
+   },
+   {
+    "id": "t3_implicit_toxicity__qwen35_2b__gold__n250__s0__abl-honest",
+    "owner": 7,
+    "to": 4,
+    "hours": 0.052
+   },
+   {
+    "id": "t3_implicit_toxicity__qwen35_2b__gold__n100__s4__abl-honest",
+    "owner": 7,
+    "to": 2,
+    "hours": 0.039
+   },
+   {
+    "id": "t3_implicit_toxicity__qwen35_2b__gold__n100__s3__abl-honest",
+    "owner": 7,
+    "to": 2,
+    "hours": 0.039
+   },
+   {
+    "id": "t3_implicit_toxicity__modernbert_large__gold__n250__s4__abl-honest",
+    "owner": 7,
+    "to": 4,
+    "hours": 0.004
+   },
+   {
+    "id": "t3_implicit_toxicity__modernbert_large__gold__n250__s3__abl-honest",
+    "owner": 7,
+    "to": 4,
+    "hours": 0.004
+   },
+   {
+    "id": "t3_implicit_toxicity__modernbert_large__gold__n100__s0__abl-honest",
+    "owner": 7,
+    "to": 4,
+    "hours": 0.003
+   },
+   {
+    "id": "t2_response_safety__qwen35_2b__gold__n1000__s4__abl-honest",
+    "owner": 7,
+    "to": 4,
+    "hours": 0.186
+   },
+   {
+    "id": "t2_response_safety__qwen35_2b__gold__n1000__s3__abl-honest",
+    "owner": 7,
+    "to": 2,
+    "hours": 0.188
+   },
+   {
+    "id": "t2_response_safety__qwen35_2b__gold__n250__s4__abl-honest",
+    "owner": 7,
+    "to": 1,
+    "hours": 0.095
+   },
+   {
+    "id": "t2_response_safety__qwen35_2b__gold__n250__s3__abl-honest",
+    "owner": 7,
+    "to": 1,
+    "hours": 0.095
+   },
+   {
+    "id": "t2_response_safety__qwen35_2b__gold__n100__s0__abl-honest",
+    "owner": 7,
+    "to": 4,
+    "hours": 0.077
+   },
+   {
+    "id": "t2_response_safety__modernbert_large__gold__n500__s2__abl-honest",
+    "owner": 7,
+    "to": 2,
+    "hours": 0.015
+   },
+   {
+    "id": "t1_rag_hallucination__modernbert_large__mix250_frontier_teacher__n5000__s2__abl-goldx2",
+    "owner": 7,
+    "to": 2,
+    "hours": 0.349
+   },
+   {
+    "id": "t1_rag_hallucination__modernbert_large__mix250_open_teacher__n8651__s1__abl-goldx2",
+    "owner": 7,
+    "to": 1,
+    "hours": 0.399
+   },
+   {
+    "id": "t3_implicit_toxicity__qwen35_2b__mix250_frontier_teacher__n5000__s1__abl-goldx2",
+    "owner": 7,
+    "to": 4,
+    "hours": 0.295
+   },
+   {
+    "id": "t2_response_safety__qwen35_2b__mix1000_frontier_teacher__n5000__s1__abl-goldx2",
+    "owner": 7,
+    "to": 4,
+    "hours": 0.434
+   },
+   {
+    "id": "t2_response_safety__qwen35_2b__mix250_frontier_teacher__n5000__s1__abl-goldx2",
+    "owner": 7,
+    "to": 2,
+    "hours": 0.432
+   },
+   {
+    "id": "t2_response_safety__qwen35_2b__mix250_open_teacher__n20000__s2__abl-goldx2",
+    "owner": 7,
+    "to": 0,
+    "hours": 1.044
+   },
+   {
+    "id": "t2_response_safety__modernbert_large__mix1000_frontier_teacher__n5000__s2__abl-goldx2",
+    "owner": 7,
+    "to": 6,
+    "hours": 0.067
+   },
+   {
+    "id": "t2_response_safety__modernbert_large__mix1000_open_teacher__n20000__s1__abl-goldx2",
+    "owner": 7,
+    "to": 1,
+    "hours": 0.172
+   },
+   {
+    "id": "t1_rag_hallucination__deberta_v3_large__gold__n8651__s2__abl-chunk",
+    "owner": 7,
+    "to": 6,
+    "hours": 0.346
+   }
+  ]
+ },
+ {
+  "ts": "2026-11-13T10:39:20+0530",
+  "before": {
+   "0": 39.28737850697691,
+   "1": 37.312154548569936,
+   "2": 38.86673024043213,
+   "3": 44.64868664737173,
+   "4": 37.5240631698447,
+   "5": 41.78736235541949,
+   "6": 38.3643543427894,
+   "7": 41.80450819528507
+  },
+  "after": {
+   "0": 39.28737850697691,
+   "1": 40.794745103097114,
+   "2": 40.16519466956028,
+   "3": 39.86763166371641,
+   "4": 39.68030710658961,
+   "5": 40.26738332808441,
+   "6": 39.88433337012448,
+   "7": 39.64826425854016
+  },
+  "moves": [
+   {
+    "id": "t1_rag_hallucination__gemma4_e2b__mix250_open_teacher__n8651__s0",
+    "owner": 3,
+    "to": 1,
+    "hours": 3.483
+   },
+   {
+    "id": "t1_rag_hallucination__gemma4_e4b__gold__n1000__s0",
+    "owner": 7,
+    "to": 4,
+    "hours": 2.156
+   },
+   {
+    "id": "t1_rag_hallucination__qwen35_4b__gold__n1000__s1",
+    "owner": 5,
+    "to": 6,
+    "hours": 1.52
+   },
+   {
+    "id": "t1_rag_hallucination__qwen35_2b__mix1000_frontier_teacher__n5000__s0",
+    "owner": 3,
+    "to": 2,
+    "hours": 1.298
+   }
+  ]
+ },
+ {
+  "ts": "2026-11-13T20:18:53+0530",
+  "before": {
+   "0": 30.65674868038383,
+   "1": 34.09924421995919,
+   "2": 31.753032717891056,
+   "3": 29.435078263062167,
+   "4": 30.35172260369696,
+   "5": 31.809081870553534,
+   "6": 32.643360921030855,
+   "7": 30.986863003823732
+  },
+  "after": {
+   "0": 32.167251183215704,
+   "1": 31.53902368832161,
+   "2": 31.753032717891056,
+   "3": 30.9667275303363,
+   "4": 31.401440632502663,
+   "5": 31.809081870553534,
+   "6": 31.11171165375672,
+   "7": 30.986863003823732
+  },
+  "moves": [
+   {
+    "id": "t1_rag_hallucination__qwen35_4b__gold__n1000__s3",
+    "owner": 1,
+    "to": 0,
+    "hours": 1.511
+   },
+   {
+    "id": "t1_rag_hallucination__qwen35_2b__mix1000_open_teacher__n8651__s2__abl-goldx2",
+    "owner": 6,
+    "to": 3,
+    "hours": 1.532
+   },
+   {
+    "id": "t2_response_safety__qwen35_2b__mix250_open_teacher__n20000__s1__abl-goldx2",
+    "owner": 1,
+    "to": 4,
+    "hours": 1.05
+   }
+  ]
+ },
+ {
+  "ts": "2026-11-14T12:54:35+0530",
+  "before": {
+   "0": 22.175367633620255,
+   "1": 12.57271141694315,
+   "2": 15.440353990988507,
+   "3": 15.620908824308897,
+   "4": 16.158192967787343,
+   "5": 14.34532512880763,
+   "6": 20.977192323142972,
+   "7": 24.13336867143836
+  },
+  "after": {
+   "0": 17.88823592306211,
+   "1": 18.117473815565294,
+   "2": 18.38206624005467,
+   "3": 16.953271639941246,
+   "4": 17.4621510916851,
+   "5": 17.897868481757143,
+   "6": 18.186757190479515,
+   "7": 16.535596574492036
+  },
+  "moves": [
+   {
+    "id": "t1_rag_hallucination__qwen35_4b__gold__n8651__s1",
+    "owner": 7,
+    "to": 1,
+    "hours": 4.045
+   },
+   {
+    "id": "t1_rag_hallucination__qwen35_2b__mix250_open_teacher__n8651__s2__abl-goldx2",
+    "owner": 0,
+    "to": 1,
+    "hours": 1.5
+   },
+   {
+    "id": "t1_rag_hallucination__qwen35_2b__mix250_open_teacher__n8651__s1__abl-goldx2",
+    "owner": 6,
+    "to": 2,
+    "hours": 1.458
+   },
+   {
+    "id": "t1_rag_hallucination__qwen35_2b__mix1000_open_teacher__n8651__s1__abl-goldx2",
+    "owner": 0,
+    "to": 2,
+    "hours": 1.484
+   },
+   {
+    "id": "t1_rag_hallucination__qwen35_4b__gold__n5000__s1",
+    "owner": 7,
+    "to": 5,
+    "hours": 3.553
+   },
+   {
+    "id": "t1_rag_hallucination__qwen35_2b__gold__n5000__s2__abl-sft",
+    "owner": 6,
+    "to": 3,
+    "hours": 1.332
+   },
+   {
+    "id": "t1_rag_hallucination__qwen35_2b__mix1000_frontier_teacher__n5000__s1__abl-goldx2",
+    "owner": 0,
+    "to": 4,
+    "hours": 1.304
+   }
+  ]
+ }
+]

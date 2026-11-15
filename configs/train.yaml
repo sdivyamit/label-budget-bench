@@ -1,0 +1,47 @@
+# Training defaults. Week 3 hyperparameter selection (T2, N=5k) overwrites the `hp` blocks;
+# after that this file is frozen (D-entry in docs/decisions.md).
+
+max_len:                 # tokens; effective = min(model max_len, task max_len)
+  t1_rag_hallucination: 4096
+  t2_response_safety: 1024
+  t3_implicit_toxicity: 256
+
+epochs:                  # by N level (upper bound inclusive)
+  - {n_max: 1000, epochs: 5}
+  - {n_max: 5000, epochs: 3}
+  - {n_max: 1000000, epochs: 2}
+min_steps: 30
+max_steps:               # §6.8 rule 6: per-N step caps
+  100: 60
+  250: 120
+  500: 200
+  1000: 350
+  2000: 600
+  5000: 1000
+  10000: 1300
+  20000: 2600
+
+ckpt_every: 200          # optimizer steps between crash-safe checkpoints
+eval_batch_tokens: 32768
+
+hp:
+  encoder:
+    # frozen 2026-11-11 from the T2 N=5k selection (D23; analysis/select_hp.py)
+    modernbert_base:  {lr: 3.0e-5, batch: 16, warmup: 0.06, weight_decay: 0.01}
+    modernbert_large: {lr: 1.0e-5, batch: 32, warmup: 0.06, weight_decay: 0.01}
+    deberta_v3_large: {lr: 2.0e-5, batch: 16, warmup: 0.06, weight_decay: 0.01,
+                       micro_max: 16}   # 32 x 512 tokens OOMs on 48 GB (fp32 weights); batch 32 = 2 x 16 accumulated
+  decoder:
+    default: &decoder {lr: 1.0e-4, batch: 16, warmup: 0.05, weight_decay: 0.0,   # Qwen3.5-2B pick (D23), also Qwen3.5-4B
+              lora_r: 16, lora_alpha: 32, lora_dropout: 0.05,
+              grad_ckpt: auto}   # off unless the longest micro-batch needs it (decoder_lora.fits_without_ckpt)
+    # Gemma 4 E2B pick is also lr 1e-4 (D23), inherited by E4B. Without checkpointing a full 16-item batch does not
+    # fit, but 4 x 4 accumulated does and is 14% faster (3.04 vs 3.52 s/step, T2) (D24)
+    gemma4_e2b: {<<: *decoder, micro_max: 4}
+    gemma4_e4b: {<<: *decoder, micro_max: 4}
+  classical:
+    tfidf_lr: {C: 1.0, ngram_max: 2, min_df: 2, max_features: 200000}
+
+label_sources:           # gold | open_teacher | frontier_teacher | mix{m}_{teacher}
+  open_teacher: {path: "preds/teacher/qwen35_9b/{task}.parquet"}
+  frontier_teacher: {api_model: gpt61_sol, kind: detailed}

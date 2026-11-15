@@ -1,0 +1,13 @@
+id,task,eval_set,metric,a,k_a,value_a,b,k_b,value_b,diff,lo,hi,p,p_holm
+H1a,t1_rag_hallucination,test,pr_auc,decoder/qwen35_2b/gold/n8651,3,0.7528,encoder/modernbert_large/gold/n8651,3,0.5010,0.2518,0.2007,0.3068,0.0000,0.0000
+H1b,t1_rag_hallucination,shift,pr_auc,decoder/qwen35_2b/gold/n8651,3,0.8896,encoder/modernbert_large/gold/n8651,3,0.7783,0.1112,0.0947,0.1282,0.0000,0.0000
+H1c,t2_response_safety,test,f1_at_05,encoder/modernbert_large/gold/n20000,3,0.8707,api/gpt61_sol,1,0.7933,0.0774,0.0623,0.0929,0.0000,0.0000
+H1d,t2_response_safety,shift_api,f1_at_05,decoder/qwen35_4b/gold/n20000,3,0.7735,api/gpt61_sol,1,0.7760,-0.0025,-0.0346,0.0315,0.8700,0.9520
+H1e,t3_implicit_toxicity,shift,pr_auc,decoder/qwen35_2b/gold/n5920,3,0.9130,encoder/modernbert_large/gold/n5920,3,0.8662,0.0468,0.0319,0.0614,0.0000,0.0000
+H2a,t2_response_safety,test,pr_auc,encoder/modernbert_large/frontier_teacher/n5000,3,0.9006,encoder/modernbert_large/gold/n5000,3,0.9268,-0.0262,-0.0343,-0.0184,0.0000,0.0000
+H2b,t2_response_safety,test,pr_auc,decoder/qwen35_2b/frontier_teacher/n5000,3,0.9079,decoder/qwen35_2b/gold/n5000,3,0.9329,-0.0249,-0.0338,-0.0163,0.0000,0.0000
+H2c,t2_response_safety,test,pr_auc,encoder/modernbert_large/mix1000_open_teacher/n20000,3,0.9231,encoder/modernbert_large/gold/n20000,3,0.9473,-0.0242,-0.0308,-0.0179,0.0000,0.0000
+H2d,t3_implicit_toxicity,test,pr_auc,decoder/qwen35_2b/open_teacher/n5920,3,0.8607,decoder/qwen35_2b/gold/n5920,3,0.9055,-0.0448,-0.0712,-0.0202,0.0000,0.0000
+H3a,t2_response_safety,test,ece,encoder/modernbert_large/frontier_teacher/n5000,3,0.1444,encoder/modernbert_large/gold/n5000,3,0.0812,0.0632,0.0507,0.0746,0.0000,0.0000
+H3b,t2_response_safety,shift_api,ece,decoder/qwen35_2b/gold/n20000,3,0.0358,encoder/modernbert_large/gold/n20000,3,0.0291,0.0067,-0.0083,0.0169,0.4760,0.9520
+H3c,t1_rag_hallucination,shift,ece,decoder/qwen35_2b/gold/n8651,3,0.1392,encoder/modernbert_large/gold/n8651,3,0.0388,0.1004,0.0832,0.1180,0.0000,0.0000

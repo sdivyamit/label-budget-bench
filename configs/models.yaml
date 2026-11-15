@@ -1,0 +1,60 @@
+# Pinned model identifiers (D13 open models, D15 API models). Change only with a dated decision.
+
+open:
+  encoders:                        # Family A
+    modernbert_base:  {hf_id: answerdotai/ModernBERT-base,  max_len: 8192}
+    modernbert_large: {hf_id: answerdotai/ModernBERT-large, max_len: 8192}
+    deberta_v3_large: {hf_id: microsoft/deberta-v3-large,   max_len: 512}
+  decoders:                        # Family B (LoRA); full sweep on the small size, partial on the larger
+    gemma4_e2b:  {hf_id: google/gemma-4-E2B-it, sweep: full}
+    qwen35_2b:   {hf_id: Qwen/Qwen3.5-2B,       sweep: full}
+    gemma4_e4b:  {hf_id: google/gemma-4-E4B-it, sweep: partial}
+    qwen35_4b:   {hf_id: Qwen/Qwen3.5-4B,       sweep: partial}
+    qwen35_08b_smoke: {hf_id: Qwen/Qwen3.5-0.8B, sweep: none}   # CPU smoke tests only, never reported
+  teacher:
+    qwen35_9b:   {hf_id: Qwen/Qwen3.5-9B, fallback: Qwen/Qwen3-8B}
+  classical:
+    tfidf_lr:    {}
+
+api:                               # Family C (D11: two vendors; D12: verdict-only) and Family D
+  gpt56_sol:                       # replaced by gpt61_sol (D18); probe data kept
+    vendor: openai
+    model: gpt-5.6-sol
+    tier: retired
+    request: {reasoning_effort: none, max_completion_tokens: 5}
+  gpt56_luna:                      # replaced by gpt6_luna (D18); probe data kept
+    vendor: openai
+    model: gpt-5.6-luna
+    tier: retired
+    request: {reasoning_effort: none, max_completion_tokens: 5}
+  gpt61_sol:                       # D18: reasoning cannot be disabled; minimum is low
+    vendor: openai
+    model: gpt-6.1-sol
+    tier: frontier
+    request: {reasoning_effort: low, max_completion_tokens: 1024}
+    logprobs: false                # rejected by this model
+    expected_output_tokens: 20     # measured: median 4, p95 46 (T2 probe)
+  gpt6_luna:                       # D18
+    vendor: openai
+    model: gpt-6-luna
+    tier: low_cost
+    request: {reasoning_effort: none, max_completion_tokens: 5}
+  gemini4_argon:
+    vendor: gemini
+    model: gemini-4-argon
+    tier: frontier
+    # Argon always thinks; lowest thinking level, thinking tokens are billed as output.
+    request: {maxOutputTokens: 1024, thinkingConfig: {thinkingLevel: low}}
+    expected_output_tokens: 10     # measured: median 5 incl. thinking (T2 probe)
+  gemini35_flash_lite:
+    vendor: gemini
+    model: gemini-3.5-flash-lite
+    tier: low_cost
+    request: {maxOutputTokens: 5}
+  jev:
+    vendor: typesafe
+    model: jev-1.14.0
+    tier: hosted_score
+    request: {primitive: noul}
+
+frontier_teacher: gpt61_sol        # labels the fixed 5k sub-pool per task (D1)

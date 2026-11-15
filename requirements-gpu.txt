@@ -1,0 +1,10 @@
+# GPU box (Thunder Compute A6000). Install after requirements.txt.
+# Must install from wheels: the Base template has a CUDA driver but no nvcc.
+torch
+transformers>=5.0
+peft>=0.14
+accelerate
+sentencepiece          # DeBERTa-v3 tokenizer
+protobuf               # without it transformers 5 misreads DeBERTa-v3's spm.model as a tiktoken file
+tiktoken
+flash-linear-attention # Qwen3.5 gated-delta layers (otherwise slow reference kernels)

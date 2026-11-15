@@ -1,0 +1,45 @@
+# Main experiment grid (§6.3-6.4). queue/make_jobs.py expands it into queue/jobs.yaml.
+# N levels and seeds come from configs/tasks.yaml via data/splits.py (5 seeds at N <= 2k, 3 above).
+
+task_order: [t2_response_safety, t3_implicit_toxicity, t1_rag_hallucination]   # §8 week plan
+
+families:
+  classical: {models: [tfidf_lr],                                   n: all,    labels: [gold, open_teacher, frontier_teacher]}
+  encoder:   {models: [modernbert_base, modernbert_large, deberta_v3_large], n: all, labels: [gold, open_teacher, frontier_teacher, mixes]}
+  decoder:   {models: [gemma4_e2b, qwen35_2b],                      n: all,    labels: [gold, open_teacher, frontier_teacher, mixes]}
+  decoder_partial:
+    family: decoder
+    models: [gemma4_e4b, qwen35_4b]
+    n: [1000, 5000, top]
+    labels: [gold]
+
+frontier_teacher_n_max: 5000     # D1: frontier teacher labels only the 5k sub-pool
+mix_gold_anchors: [250, 1000]    # gold anchor + rest of the pool with teacher labels
+# mixes run at the top N level with the open teacher, and at N = 5000 with the frontier teacher
+
+hp_selection:                    # Week 3 (§6.4): T2, N = 5k, gold, seed 0; pick by val PR-AUC, then freeze train.yaml
+  task: t2_response_safety
+  n: 5000
+  seed: 0
+  grids:
+    encoder: {models: [modernbert_base, modernbert_large, deberta_v3_large], lr: [1.0e-5, 2.0e-5, 3.0e-5], batch: [16, 32]}
+    decoder: {models: [qwen35_2b, gemma4_e2b], lr: [1.0e-4, 2.0e-4]}   # the 4B partial decoders inherit their sibling's pick
+
+ablations:                       # V-F; queued after the main grid; run ids carry the tag. Seeds per seeds_for(n).
+  # (concise vs detailed API prompt runs on the API side, labels/api.py)
+  - {tag: abl-head,  models: [qwen35_2b, gemma4_e2b], n: [5000], labels: [gold], hp: {scoring: head}}
+  - {tag: abl-sft,   models: [qwen35_2b], n: [5000], labels: [gold], hp: {lora: false, lr: 2.0e-5}}   # fp32 full SFT; Gemma E2B does not fit
+  - {tag: abl-chunk, models: [deberta_v3_large], tasks: [t1_rag_hallucination], n: all, labels: [gold], hp: {chunk_pool: true}}
+  - {tag: abl-goldx2, models: [tfidf_lr, modernbert_large, qwen35_2b], n: mixes, labels: [mixes], hp: {gold_weight: 2.0}}
+  - {tag: abl-honest, models: [tfidf_lr, modernbert_large, qwen35_2b], n: [100, 250, 500, 1000], labels: [gold], hp: {budget_honest: true}}
+  # D25 robustness: frontier-teacher items refused by the provider's content filter are dropped instead of counted as harmful
+  - {tag: abl-norefusal, models: [tfidf_lr, modernbert_large, qwen35_2b], tasks: [t2_response_safety], n: [1000, 5000], labels: [frontier_teacher], hp: {drop_refused: true}}
+
+run_first:                       # main-sweep cells moved to the front: D20 re-projection needs T1 decoder timings
+  - t1_rag_hallucination__qwen35_2b__gold__n1000__s0
+  - t1_rag_hallucination__qwen35_2b__gold__n8651__s0
+
+gate_a:                          # Week 2 Gate A cells (T2, N = 1k, seed 0)
+  - {family: encoder, model: modernbert_base, task: t2_response_safety, n: 1000, seed: 0, labels: gold}
+  - {family: decoder, model: qwen35_2b,       task: t2_response_safety, n: 1000, seed: 0, labels: gold}
+  - {family: classical, model: tfidf_lr,      task: t2_response_safety, n: 1000, seed: 0, labels: gold}

@@ -1,0 +1,73 @@
+# Task, split, and sampling configuration. Every value here is a frozen protocol
+# decision once docs/decisions.md is signed; change only with a dated decision entry.
+
+split_seed: 20261110        # fixed seed for val carving, pool capping, sub-pool, API subsamples
+chain_seeds: [0, 1, 2, 3, 4]
+seeds_small_n: 5            # seeds used at N <= small_n_max
+seeds_large_n: 3            # seeds used above it (seeds 0..2)
+small_n_max: 2000
+n_levels: [100, 250, 500, 1000, 2000, 5000, 10000, 20000]   # levels above pool size are dropped; pool size added as top level
+frontier_subpool: 5000      # frontier teacher labels only this fixed stratified sub-pool per task
+val_size: 1000
+pool_cap: 20000
+api_subsample_detailed: 1000   # detailed-prompt API eval (test and shift)
+api_subsample_shift: 2000      # concise-prompt API eval on shifted sets
+audit_size:                    # label-alignment audit per cross-dataset shift pair (D14). T1's shift is a
+                               # held-out RAGTruth task type with the same guideline, so no audit (D21).
+  t2_response_safety: 100      # T3's shift is held-out ToxiGen target groups, same guideline, so no audit (D22)
+annotators: [annotator_1, annotator_2]
+
+tasks:
+  t1_rag_hallucination:
+    positive: "response contains content not supported by the provided context"
+    train_source: ragtruth
+    shift_source: ragtruth       # D21: LLM-AggreFact failed the alignment audit (kappa 0.38 / 0.40)
+    shift_task_type: Data2txt    # held out from pool/val/test; every RAGTruth Data2txt response is shift
+    strata: [label, group]       # group = RAGTruth task_type (QA / Summary in the pool)
+    val_group_key: source_id     # ~6 responses per source document; val split by source
+    exclude_quality: [incorrect_refusal, truncated]
+    shift_cap: 3000
+
+  t2_response_safety:
+    positive: "assistant response is harmful"
+    train_source: beavertails_30k
+    shift_source: wildguardtest
+    strata: [label]
+    shift_cap: null              # WildGuardTest is small; use all items with a response label
+    refusal_label: 1             # D25: an API model's content-filter refusal counts as "harmful" (teacher labels and API evaluation)
+
+  t3_implicit_toxicity:
+    positive: "text is hateful/toxic"
+    train_source: toxigen_annotated
+    shift_source: toxigen_annotated  # D22: Implicit Hate failed the alignment audit (kappa 0.47 / 0.42)
+    # Held-out target groups (pool/val/test never contain them). Drawn once, not hand-picked: related
+    # groups form clusters {asian, chinese} {latino, mexican} {mental_dis, physical_dis}
+    # {middle_east, muslim}, others singletons; clusters permuted with default_rng([split_seed, 3]) and
+    # taken in order until >= 3 groups are held out.
+    shift_heldout_groups: [native_american, latino, mexican]
+    strata: [label, group]       # group = ToxiGen target_group, canonical names (prepare.TOXIGEN_GROUPS)
+    toxicity_threshold: 3.0      # positive iff toxicity_human >= threshold (DECISION D2: confirm vs ToxiGen paper)
+    shift_cap: 3000
+
+sources:
+  ragtruth:
+    url: https://github.com/ParticleMedia/RAGTruth
+    license: MIT
+  llm_aggrefact:                 # audited and rejected as T1's shifted set (D21); not in processed data
+    url: https://huggingface.co/datasets/lytang/LLM-AggreFact
+    license: CC BY-ND 4.0
+    gated: true
+  beavertails_30k:
+    url: https://huggingface.co/datasets/PKU-Alignment/BeaverTails
+    license: CC BY-NC 4.0
+  wildguardtest:
+    url: https://huggingface.co/datasets/allenai/wildguardmix
+    license: ODC-BY
+    gated: true
+  toxigen_annotated:
+    url: https://huggingface.co/datasets/toxigen/toxigen-data
+    license: "MIT (microsoft/TOXIGEN repository)"
+  implicit_hate_stg1:            # audited and rejected as T3's shifted set (D22); not in processed data
+    url: https://github.com/SALT-NLP/implicit-hate
+    license: MIT
+    access: "complete authors' survey, then download implicit-hate-corpus.zip into data/raw/implicit_hate/"
