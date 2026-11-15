@@ -5,7 +5,7 @@ Code, frozen prompts, nested label-budget splits, alignment-audit labels, and ag
 > **From Label Budget to Deployed Threshold: How Gold and LLM-Distilled Labels Shape Discrimination, Calibration, and Shift Robustness of Fine-Tuned Encoders and Small Decoders**  
 > Divya Singaravelu and Suresh Rajendran (2026)
 
-Per-item predictions (`preds/runs/<run_id>/preds.parquet`) and full metric tables (`results/metrics.parquet`, `results/api_preds.parquet`) for all 2,342 completed runs are archived on Zenodo (see `ZENODO-METADATA.md` or the Data Availability section of the paper) and unpack directly into the root of this repository.
+Per-item predictions (`preds/runs/<run_id>/preds.parquet`) and full metric tables (`results/metrics.parquet`, `results/api_preds.parquet`) for all 2,342 completed runs are archived on Zenodo, [doi:10.5281/zenodo.24243899](https://doi.org/10.5281/zenodo.24243899), and unpack directly into the root of this repository.
 
 ## Content & Licensing Notice
 
@@ -47,7 +47,7 @@ export HF_TOKEN=hf_...
 
 ### 3. Reproduce Every Table and Figure from the Zenodo Predictions Archive
 
-Unpack `label-budget-bench-predictions-v1.tar.gz` from Zenodo into the repository root, then run:
+Download `label-budget-bench-predictions-v1.tar.gz` from https://doi.org/10.5281/zenodo.24243899, unpack it into the repository root, then run:
 
 ```bash
 tar -xzf label-budget-bench-predictions-v1.tar.gz
