@@ -21,8 +21,7 @@ Label only your own files (`*_audit_annotator_1.csv`, `*_audit_annotator_2.csv`)
 ## Rules
 
 1. **Work independently.** Don't look at the other person's file and don't discuss any item until both of you have finished all three files.
-
-2. **No AI assistance and no looking up the source dataset.**
+2.
 3. **Fill the** `label` **column with** `1` **or** `0` **for every row.** If you genuinely can't decide, pick the more likely answer and write `unsure` in `notes`. Don't leave blanks.
 4. **Don't edit any other column**, reorder rows, or rename the file.
 5. Open in Google Sheets or Excel, then save/export as **CSV** with the exact same file name in this folder.

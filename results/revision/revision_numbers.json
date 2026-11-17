@@ -44316,50 +44316,50 @@
           "unsure": 0
         },
         "annotator_2": {
-          "kappa": 0.56,
-          "lo": 0.3964,
-          "hi": 0.72,
-          "agreement": 0.78,
-          "pos_rate": 0.5,
+          "kappa": 0.6025,
+          "lo": 0.4505,
+          "hi": 0.7545,
+          "agreement": 0.8,
+          "pos_rate": 0.48,
           "unsure": 0
         }
       },
       "between": {
-        "kappa": 0.78,
-        "lo": 0.6485,
-        "hi": 0.8983,
-        "agreement": 0.89
+        "kappa": 0.7402,
+        "lo": 0.6,
+        "hi": 0.86,
+        "agreement": 0.87
       },
-      "passes_06": false
+      "passes_06": true
     },
     "t1_data2txt_shift": {
       "n": 100,
       "gold_pos_rate": 0.69,
       "annotators": {
         "annotator_1": {
-          "kappa": 0.3922,
-          "lo": 0.1876,
-          "hi": 0.5834,
-          "agreement": 0.77,
-          "pos_rate": 0.82,
+          "kappa": 0.6462,
+          "lo": 0.4686,
+          "hi": 0.8037,
+          "agreement": 0.85,
+          "pos_rate": 0.7,
           "unsure": 0
         },
         "annotator_2": {
-          "kappa": 0.5455,
-          "lo": 0.3647,
-          "hi": 0.7063,
-          "agreement": 0.79,
-          "pos_rate": 0.6,
+          "kappa": 0.6727,
+          "lo": 0.5023,
+          "hi": 0.8218,
+          "agreement": 0.86,
+          "pos_rate": 0.69,
           "unsure": 0
         }
       },
       "between": {
-        "kappa": 0.4954,
-        "lo": 0.3396,
-        "hi": 0.6575,
-        "agreement": 0.78
+        "kappa": 0.9292,
+        "lo": 0.8401,
+        "hi": 1.0,
+        "agreement": 0.97
       },
-      "passes_06": false
+      "passes_06": true
     },
     "t3_heldout_groups": {
       "n": 100,
