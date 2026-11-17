@@ -257,6 +257,11 @@ def score() -> int:
         entry["between"] = dict(kappa=round(k_btw, 4), lo=round(lo_b, 4), hi=round(hi_b, 4),
                                 agreement=round(agree_b, 4))
         entry["passes_06"] = bool(passed)
+        same = labels[w0] == labels[w1]
+        entry["shared_vs_gold"] = dict(n=int(np.sum(same & (labels[w0] != g))),
+                                       authors1_gold0=int(np.sum(same & (labels[w0] == 1) & (g == 0))),
+                                       authors0_gold1=int(np.sum(same & (labels[w0] == 0) & (g == 1))))
+        print(f"  shared disagreement with gold: {entry['shared_vs_gold']}")
         summary[name] = entry
 
     if rows:

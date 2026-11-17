@@ -44330,7 +44330,12 @@
         "hi": 0.86,
         "agreement": 0.87
       },
-      "passes_06": true
+      "passes_06": true,
+      "shared_vs_gold": {
+        "n": 13,
+        "authors1_gold0": 3,
+        "authors0_gold1": 10
+      }
     },
     "t1_data2txt_shift": {
       "n": 100,
@@ -44359,7 +44364,12 @@
         "hi": 1.0,
         "agreement": 0.97
       },
-      "passes_06": true
+      "passes_06": true,
+      "shared_vs_gold": {
+        "n": 13,
+        "authors1_gold0": 7,
+        "authors0_gold1": 6
+      }
     },
     "t3_heldout_groups": {
       "n": 100,
@@ -44388,7 +44398,12 @@
         "hi": 0.841,
         "agreement": 0.86
       },
-      "passes_06": true
+      "passes_06": true,
+      "shared_vs_gold": {
+        "n": 8,
+        "authors1_gold0": 6,
+        "authors0_gold1": 2
+      }
     }
   }
 }
