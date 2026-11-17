@@ -12,7 +12,7 @@ mutating any frozen data, predictions, or results in `label-budget-bench/`:
        texts are never redistributed while `analysis/audit_kappa.py` reproduces identical kappas.
      - Sanitizes vendor reserve comments in `configs/budget.yaml`, instance IDs in the serving CSV,
        and private key/server details in `docs/decisions.md`.
-  2. `zenodo/label-budget-bench-predictions-v1.1.2.tar.gz` — lightweight per-item predictions and
+  2. `zenodo/label-budget-bench-predictions-v1.1.3.tar.gz` — lightweight per-item predictions and
      metrics archive (<100 MB compressed, well under Zenodo's 50 GB limit) containing:
      - `preds/runs/<run_id>/{preds.parquet,metrics.json,run.json,DONE}` for all finished runs
        (excluding 16.55 GB of LoRA adapter weights),
@@ -44,8 +44,8 @@ WORKSPACE = SRC.parent
 OUT_ROOT = WORKSPACE / "release" / "label-budget-bench"
 PUB = OUT_ROOT / "public_repo"
 ZEN = OUT_ROOT / "zenodo"
-ZENODO_DOI = "10.5281/zenodo.24322977"
-TARBALL = ZEN / "label-budget-bench-predictions-v1.1.2.tar.gz"
+ZENODO_DOI = "10.5281/zenodo.24323089"
+TARBALL = ZEN / "label-budget-bench-predictions-v1.1.3.tar.gz"
 
 CODE_DIRS = ["analysis", "configs", "data", "detect", "eval", "labels", "queue", "serve", "tests", "train"]
 DEPLOY_KEEP = [
@@ -215,18 +215,6 @@ vendors:
         for who, anon in annotator_map.items():
             df = pd.read_csv(ext_src / f"{name}_audit_{who}.csv", dtype=str, keep_default_na=False)
             df[["item", "uid", "label"]].to_csv(ext_dst / f"{name}_audit_{anon}.csv", index=False)
-    for ver in sorted(p for p in (ext_src / "history").iterdir() if p.is_dir()):
-        (ext_dst / "history" / ver.name).mkdir(parents=True, exist_ok=True)
-        for f in sorted(ver.glob("*.csv")):
-            out_name = f.name
-            for who, anon in annotator_map.items():
-                out_name = out_name.replace(f"_{who}.csv", f"_{anon}.csv")
-            df = pd.read_csv(f, dtype=str, keep_default_na=False)
-            df[["item", "uid", "label"]].to_csv(ext_dst / "history" / ver.name / out_name, index=False)
-    changelog = (ext_src / "CHANGELOG.md").read_text()
-    for who, anon in annotator_map.items():
-        changelog = re.sub(rf"\b{who}\b", anon, changelog)
-    (ext_dst / "CHANGELOG.md").write_text(changelog)
 
     # 6. Cached API verdicts/scores & open-teacher labels (IDs + scores only, no dataset text, no batch IDs)
     (PUB / "preds" / "api").mkdir(parents=True, exist_ok=True)
@@ -501,7 +489,7 @@ def build_zenodo_bundle() -> dict:
   1. Singaravelu, Divya
   2. Rajendran, Suresh
 - **License:** Creative Commons Attribution 4.0 International (CC-BY-4.0) for predictions/tables; MIT License for code.
-- **Version:** `1.1.2`
+- **Version:** `1.1.3`
 - **Keywords:** text classification, label budget, knowledge distillation, LLM annotations, model calibration, conformal prediction, distribution shift, ModernBERT, DeBERTa, Gemma 4, Qwen3.5
 - **Description:**
   > Per-item validation, in-distribution test, and distribution-shifted test predictions (`preds.parquet`), run metadata (`run.json`, `metrics.json`), teacher label caches, alignment-audit annotations, and aggregated bootstrap tables (`metrics.parquet`, `paper_numbers.json`, `results/tables/*.csv`) for all {len(run_dirs):,} completed runs (trained runs across TF-IDF, ModernBERT-base/large, DeBERTa-v3-large, Gemma 4 E2B/E4B, and Qwen3.5-2B/4B; 7 off-the-shelf detectors; and pipeline verification runs) plus hosted API references. To respect upstream dataset licenses (including CC BY-ND 4.0 for LLM-AggreFact and CC BY-NC 4.0 for BeaverTails), all prediction and audit files contain item identifiers (`uid`) and numeric probabilities/verdicts only; no dataset text is redistributed.
