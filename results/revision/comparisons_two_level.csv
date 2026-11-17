@@ -1,0 +1,13 @@
+id,task,eval_set,metric,a,b,k_a,k_b,value_a,value_b,diff,item_lo,item_hi,item_p,two_lo,two_hi,two_p,cl_lo,cl_hi,cl_p,item_p_holm,two_p_holm,cl_p_holm
+H1a,t1_rag_hallucination,test,pr_auc,decoder/qwen35_2b/gold/n8651,encoder/modernbert_large/gold/n8651,3,3,0.7528,0.501,0.2518,0.2053,0.2986,0.0,0.1902,0.3158,0.0,0.1857,0.3217,0.0,0.0,0.0,0.0
+H1b,t1_rag_hallucination,shift,pr_auc,decoder/qwen35_2b/gold/n8651,encoder/modernbert_large/gold/n8651,3,3,0.8896,0.7783,0.1112,0.0948,0.1275,0.0,0.0934,0.1291,0.0,0.0927,0.1297,0.0,0.0,0.0,0.0
+H1c,t2_response_safety,test,f1_at_05,encoder/modernbert_large/gold/n20000,api/gpt61_sol,3,1,0.8707,0.7933,0.0774,0.0633,0.0921,0.0,0.0627,0.0926,0.0,0.0616,0.0937,0.0,0.0,0.0,0.0
+H1d,t2_response_safety,shift_api,f1_at_05,decoder/qwen35_4b/gold/n20000,api/gpt61_sol,3,1,0.7735,0.776,-0.0025,-0.0354,0.0317,0.884,-0.0365,0.0329,0.8806,-0.0375,0.0326,0.8916,0.9704,1.0,1.0
+H1e,t3_implicit_toxicity,shift,pr_auc,decoder/qwen35_2b/gold/n5920,encoder/modernbert_large/gold/n5920,3,3,0.913,0.8662,0.0468,0.0328,0.062,0.0,0.0323,0.0622,0.0,0.0317,0.062,0.0,0.0,0.0,0.0
+H2a,t2_response_safety,test,pr_auc,encoder/modernbert_large/frontier_teacher/n5000,encoder/modernbert_large/gold/n5000,3,3,0.9006,0.9268,-0.0262,-0.0339,-0.0189,0.0,-0.0347,-0.0175,0.0,-0.0355,-0.017,0.0,0.0,0.0,0.0
+H2b,t2_response_safety,test,pr_auc,decoder/qwen35_2b/frontier_teacher/n5000,decoder/qwen35_2b/gold/n5000,3,3,0.9079,0.9329,-0.0249,-0.0336,-0.0166,0.0,-0.035,-0.0148,0.0,-0.0355,-0.0145,0.0,0.0,0.0,0.0
+H2c,t2_response_safety,test,pr_auc,encoder/modernbert_large/mix1000_open_teacher/n20000,encoder/modernbert_large/gold/n20000,3,3,0.9231,0.9473,-0.0242,-0.0307,-0.018,0.0,-0.0316,-0.0175,0.0,-0.0316,-0.0173,0.0,0.0,0.0,0.0
+H2d,t3_implicit_toxicity,test,pr_auc,decoder/qwen35_2b/open_teacher/n5920,decoder/qwen35_2b/gold/n5920,3,3,0.8607,0.9055,-0.0448,-0.0717,-0.0199,0.0,-0.0727,-0.0194,0.0002,-0.0726,-0.0195,0.0002,0.0,0.0006,0.0006
+H3a,t2_response_safety,test,ece,encoder/modernbert_large/frontier_teacher/n5000,encoder/modernbert_large/gold/n5000,3,3,0.1444,0.0812,0.0632,0.0516,0.0739,0.0,0.0505,0.0748,0.0,0.0501,0.0755,0.0,0.0,0.0,0.0
+H3b,t2_response_safety,shift_api,ece,decoder/qwen35_2b/gold/n20000,encoder/modernbert_large/gold/n20000,3,3,0.0358,0.0291,0.0067,-0.0086,0.0171,0.4852,-0.0148,0.0234,0.6352,-0.015,0.0232,0.6136,0.9704,1.0,1.0
+H3c,t1_rag_hallucination,shift,ece,decoder/qwen35_2b/gold/n8651,encoder/modernbert_large/gold/n8651,3,3,0.1392,0.0388,0.1004,0.0833,0.1182,0.0,0.0769,0.1271,0.0,0.0759,0.1273,0.0,0.0,0.0,0.0

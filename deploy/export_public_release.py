@@ -12,9 +12,9 @@ mutating any frozen data, predictions, or results in `label-budget-bench/`:
        texts are never redistributed while `analysis/audit_kappa.py` reproduces identical kappas.
      - Sanitizes vendor reserve comments in `configs/budget.yaml`, instance IDs in the serving CSV,
        and private key/server details in `docs/decisions.md`.
-  2. `zenodo/label-budget-bench-predictions-v1.tar.gz` — lightweight per-item predictions and
+  2. `zenodo/label-budget-bench-predictions-v1.1.tar.gz` — lightweight per-item predictions and
      metrics archive (<100 MB compressed, well under Zenodo's 50 GB limit) containing:
-     - `preds/runs/<run_id>/{preds.parquet,metrics.json,run.json,DONE}` for all 2,342 finished runs
+     - `preds/runs/<run_id>/{preds.parquet,metrics.json,run.json,DONE}` for all finished runs
        (excluding 16.55 GB of LoRA adapter weights),
      - `preds/teacher/qwen35_9b/*.{parquet,done}`,
      - `results/{metrics.parquet,api_preds.parquet,api_metrics.csv,paper_numbers.json,ENVIRONMENT-gpu.txt,FREEZE-2026-11-15.sha256}`,
@@ -44,7 +44,8 @@ WORKSPACE = SRC.parent
 OUT_ROOT = WORKSPACE / "release" / "label-budget-bench"
 PUB = OUT_ROOT / "public_repo"
 ZEN = OUT_ROOT / "zenodo"
-TARBALL = ZEN / "label-budget-bench-predictions-v1.tar.gz"
+ZENODO_DOI = "10.5281/zenodo.24320189"
+TARBALL = ZEN / "label-budget-bench-predictions-v1.1.tar.gz"
 
 CODE_DIRS = ["analysis", "configs", "data", "detect", "eval", "labels", "queue", "serve", "tests", "train"]
 DEPLOY_KEEP = [
@@ -157,6 +158,7 @@ vendors:
         dec_txt,
     )
     dec_txt = re.sub(r"snapshot `gate-a-\d{4}-\d{2}-\d{2}`", "a prebuilt environment snapshot", dec_txt)
+    dec_txt = re.sub(r"`?plans/(?:PLAN|NOTES|RUNBOOK)-label-budget[\w.-]*\.md`?", "the internal project plan", dec_txt)
     (PUB / "docs" / "decisions.md").write_text(dec_txt)
 
     # Audit directory: instructions (anonymized) + ID-only final CSVs + rejected-set gold CSVs
@@ -200,6 +202,20 @@ vendors:
         if gold_name:
             shutil.copy2(s_dir / gold_name, d_dir / gold_name)
 
+    # Extended retained-split audit (revision): anonymized, ID + label only (notes quote dataset text)
+    ext_src, ext_dst = SRC / "docs" / "audit" / "extended", PUB / "docs" / "audit" / "extended"
+    ext_dst.mkdir(parents=True, exist_ok=True)
+    ext_inst = (ext_src / "INSTRUCTIONS.md").read_text()
+    ext_inst = ext_inst.replace("(Divya: `*_audit_divya.csv`; Suresh: `*_audit_suresh.csv`)",
+                                "(`*_audit_annotator_1.csv`, `*_audit_annotator_2.csv`)")
+    ext_inst = ext_inst.replace("Divya", "annotator_1").replace("Suresh", "annotator_2")
+    (ext_dst / "INSTRUCTIONS.md").write_text(ext_inst)
+    shutil.copy2(ext_src / "manifest.json", ext_dst / "manifest.json")
+    for name in ("t2_beavertails_pool", "t1_data2txt_shift", "t3_heldout_groups"):
+        for who, anon in annotator_map.items():
+            df = pd.read_csv(ext_src / f"{name}_audit_{who}.csv", dtype=str, keep_default_na=False)
+            df[["item", "uid", "label"]].to_csv(ext_dst / f"{name}_audit_{anon}.csv", index=False)
+
     # 6. Cached API verdicts/scores & open-teacher labels (IDs + scores only, no dataset text, no batch IDs)
     (PUB / "preds" / "api").mkdir(parents=True, exist_ok=True)
     for p in sorted((SRC / "preds" / "api").iterdir()):
@@ -221,6 +237,13 @@ vendors:
                         (sub / fp.name).write_text("\n".join(lines) + ("\n" if lines else ""))
                     else:
                         shutil.copy2(fp, sub / fp.name)
+
+    for p in sorted((SRC / "preds" / "api_repeats").iterdir()):
+        if p.is_dir():
+            sub = PUB / "preds" / "api_repeats" / p.name
+            sub.mkdir(parents=True, exist_ok=True)
+            for fp in sorted(p.glob("*.jsonl")):
+                shutil.copy2(fp, sub / fp.name)
 
     copy_clean_tree(SRC / "preds" / "teacher", PUB / "preds" / "teacher")
 
@@ -250,6 +273,21 @@ vendors:
         else:
             shutil.copy2(SRC / "results" / fname, PUB / "results" / fname)
     copy_clean_tree(SRC / "results" / "tables", PUB / "results" / "tables")
+    rev_dst = PUB / "results" / "revision"
+    copy_clean_tree(SRC / "results" / "revision" / "figures", rev_dst / "figures")
+    for fp in sorted((SRC / "results" / "revision").iterdir()):
+        if fp.suffix == ".csv":
+            df = pd.read_csv(fp)
+            if fp.name == "prompt_overlap_check.csv":
+                df = df.drop(columns=[c for c in ("difflib_top5", "closest_source") if c in df.columns])
+            df.to_csv(rev_dst / fp.name, index=False)
+        elif fp.name == "revision_numbers.json":
+            shutil.copy2(fp, rev_dst / fp.name)
+    for fname in ("extended_audit_kappa.csv", "revision_numbers.json"):
+        t = (rev_dst / fname).read_text()
+        for who, anon in annotator_map.items():
+            t = t.replace(who, anon)
+        (rev_dst / fname).write_text(t)
     copy_clean_tree(SRC / "results" / "figures", PUB / "results" / "figures")
 
     # Adjust public .gitignore so tracked release artifacts in logs/serving_a6000.csv, data/splits/, preds/teacher/ are not ignored
@@ -277,7 +315,9 @@ deploy/wheels/
     )
 
     # 9. Public README.md
-    (PUB / "README.md").write_text(PUBLIC_README)
+    n_runs = sum(1 for p in (SRC / "preds" / "runs").iterdir() if (p / "DONE").exists())
+    (PUB / "README.md").write_text(
+        PUBLIC_README.replace("{n_runs:,}", f"{n_runs:,}").replace("{doi}", ZENODO_DOI).replace("{tarball}", TARBALL.name))
 
 
 PUBLIC_README = """\
@@ -288,7 +328,7 @@ Code, frozen prompts, nested label-budget splits, alignment-audit labels, and ag
 > **From Label Budget to Deployed Threshold: How Gold and LLM-Distilled Labels Shape Discrimination, Calibration, and Shift Robustness of Fine-Tuned Encoders and Small Decoders**  
 > Divya Singaravelu and Suresh Rajendran (2026)
 
-Per-item predictions (`preds/runs/<run_id>/preds.parquet`) and full metric tables (`results/metrics.parquet`, `results/api_preds.parquet`) for all 2,342 completed runs are archived on Zenodo (see `ZENODO-METADATA.md` or the Data Availability section of the paper) and unpack directly into the root of this repository.
+Per-item predictions (`preds/runs/<run_id>/preds.parquet`) and full metric tables (`results/metrics.parquet`, `results/api_preds.parquet`) for all {n_runs:,} completed runs are archived on Zenodo, [doi:{doi}](https://doi.org/{doi}), and unpack directly into the root of this repository.
 
 ## Content & Licensing Notice
 
@@ -304,8 +344,8 @@ Per-item predictions (`preds/runs/<run_id>/preds.parquet`) and full metric table
 - `train/` — Fine-tuning pipelines for TF-IDF + logistic regression (`classical.py`), ModernBERT / DeBERTa-v3 (`encoder.py`), LoRA / full-SFT Qwen3.5 & Gemma 4 decoders (`decoder.py`), and vLLM open-teacher labelling (`teacher.py`).
 - `detect/` & `serve/` — Off-the-shelf zero-label detector runner (`detect/run_detectors.py`) and A6000 throughput/latency benchmark (`serve/bench.py`).
 - `eval/` — GPU-free evaluation library: PR-AUC, max-F1, operating-point recall/precision, ECE, Brier, Balanced Brier Score (`metrics.py`), temperature / Platt / isotonic calibration (`calibrate.py`), split-conformal FPR control (`conformal.py`), Krippendorff's $\\alpha_K$ (`stability.py`), break-even budgets $N^\\star$ (`breakeven.py`), and paired item/cluster bootstrap (`fastboot.py`).
-- `analysis/` — One-command paper reproduction pipeline (`run_all.sh`) generating every CSV table (`results/tables/`), vector PDF figure (`results/figures/`), and `results/paper_numbers.json`.
-- `docs/` — Frozen protocol decision log (`decisions.md`), prior-art search log (`prior-art-log.md`), and anonymized label-semantics alignment audit sheets (`docs/audit/`).
+- `analysis/` — One-command paper reproduction pipeline (`run_all.sh`) generating every CSV table (`results/tables/`), vector PDF figure (`results/figures/`), and `results/paper_numbers.json`; revision analyses (`rev_all.sh`, `rev_*.py`) write `results/revision/`.
+- `docs/` — Frozen protocol decision log (`decisions.md`), prior-art search log (`prior-art-log.md`), and anonymized label-semantics alignment audit sheets (`docs/audit/`, including the retained-split audit in `docs/audit/extended/`).
 
 ## Quickstart
 
@@ -326,14 +366,15 @@ export HF_TOKEN=hf_...
 .venv/bin/python data/download.py
 .venv/bin/python data/prepare.py
 .venv/bin/python analysis/audit_kappa.py   # reproduces Section IV-A1 alignment-audit kappas
+.venv/bin/python analysis/rev_audit.py --score   # retained-split (extended) audit kappas
 ```
 
 ### 3. Reproduce Every Table and Figure from the Zenodo Predictions Archive
 
-Unpack `label-budget-bench-predictions-v1.tar.gz` from Zenodo into the repository root, then run:
+Download `{tarball}` from https://doi.org/{doi}, unpack it into the repository root, then run:
 
 ```bash
-tar -xzf label-budget-bench-predictions-v1.tar.gz
+tar -xzf {tarball}
 bash analysis/run_all.sh
 ```
 
@@ -367,7 +408,7 @@ def build_zenodo_bundle() -> dict:
     uncompressed_bytes = 0
 
     with tarfile.open(TARBALL, "w:gz", compresslevel=6) as tar:
-        # 1. All 2,342 finished runs (predictions + metadata only; NO adapter weights)
+        # 1. All finished runs (predictions + metadata only; NO adapter weights)
         for rd in run_dirs:
             for fname in allowed_run_files:
                 fp = rd / fname
@@ -406,6 +447,16 @@ def build_zenodo_bundle() -> dict:
             file_count += 1
             uncompressed_bytes += src_fp.stat().st_size
 
+        for fp in sorted((PUB / "results" / "revision").rglob("*")):
+            if fp.is_file():
+                tar.add(fp, arcname=str(fp.relative_to(PUB)), recursive=False)
+                file_count += 1
+                uncompressed_bytes += fp.stat().st_size
+        for fp in sorted((PUB / "preds" / "api_repeats").rglob("*.jsonl")):
+            tar.add(fp, arcname=str(fp.relative_to(PUB)), recursive=False)
+            file_count += 1
+            uncompressed_bytes += fp.stat().st_size
+
         for sub in ("tables", "figures"):
             for fp in sorted((SRC / "results" / sub).iterdir()):
                 if fp.is_file() and fp.name != ".DS_Store":
@@ -438,10 +489,10 @@ def build_zenodo_bundle() -> dict:
   1. Singaravelu, Divya
   2. Rajendran, Suresh
 - **License:** Creative Commons Attribution 4.0 International (CC-BY-4.0) for predictions/tables; MIT License for code.
-- **Version:** `1.0.0`
+- **Version:** `1.1.0`
 - **Keywords:** text classification, label budget, knowledge distillation, LLM annotations, model calibration, conformal prediction, distribution shift, ModernBERT, DeBERTa, Gemma 4, Qwen3.5
 - **Description:**
-  > Per-item validation, in-distribution test, and distribution-shifted test predictions (`preds.parquet`), run metadata (`run.json`, `metrics.json`), teacher label caches, alignment-audit annotations, and aggregated bootstrap tables (`metrics.parquet`, `paper_numbers.json`, `results/tables/*.csv`) for all 2,342 completed runs (2,328 training runs across TF-IDF, ModernBERT-base/large, DeBERTa-v3-large, Gemma 4 E2B/E4B, and Qwen3.5-2B/4B; 7 off-the-shelf detectors; and pipeline verification runs) plus hosted API references. To respect upstream dataset licenses (including CC BY-ND 4.0 for LLM-AggreFact and CC BY-NC 4.0 for BeaverTails), all prediction and audit files contain item identifiers (`uid`) and numeric probabilities/verdicts only; no dataset text is redistributed.
+  > Per-item validation, in-distribution test, and distribution-shifted test predictions (`preds.parquet`), run metadata (`run.json`, `metrics.json`), teacher label caches, alignment-audit annotations, and aggregated bootstrap tables (`metrics.parquet`, `paper_numbers.json`, `results/tables/*.csv`) for all {len(run_dirs):,} completed runs (trained runs across TF-IDF, ModernBERT-base/large, DeBERTa-v3-large, Gemma 4 E2B/E4B, and Qwen3.5-2B/4B; 7 off-the-shelf detectors; and pipeline verification runs) plus hosted API references. To respect upstream dataset licenses (including CC BY-ND 4.0 for LLM-AggreFact and CC BY-NC 4.0 for BeaverTails), all prediction and audit files contain item identifiers (`uid`) and numeric probabilities/verdicts only; no dataset text is redistributed.
 
 ## Verification Against `FREEZE-2026-11-15.sha256`
 

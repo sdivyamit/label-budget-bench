@@ -5,7 +5,7 @@ Code, frozen prompts, nested label-budget splits, alignment-audit labels, and ag
 > **From Label Budget to Deployed Threshold: How Gold and LLM-Distilled Labels Shape Discrimination, Calibration, and Shift Robustness of Fine-Tuned Encoders and Small Decoders**  
 > Divya Singaravelu and Suresh Rajendran (2026)
 
-Per-item predictions (`preds/runs/<run_id>/preds.parquet`) and full metric tables (`results/metrics.parquet`, `results/api_preds.parquet`) for all 2,342 completed runs are archived on Zenodo, [doi:10.5281/zenodo.24243899](https://doi.org/10.5281/zenodo.24243899), and unpack directly into the root of this repository.
+Per-item predictions (`preds/runs/<run_id>/preds.parquet`) and full metric tables (`results/metrics.parquet`, `results/api_preds.parquet`) for all 2,425 completed runs are archived on Zenodo, [doi:10.5281/zenodo.24320189](https://doi.org/10.5281/zenodo.24320189), and unpack directly into the root of this repository.
 
 ## Content & Licensing Notice
 
@@ -21,8 +21,8 @@ Per-item predictions (`preds/runs/<run_id>/preds.parquet`) and full metric table
 - `train/` — Fine-tuning pipelines for TF-IDF + logistic regression (`classical.py`), ModernBERT / DeBERTa-v3 (`encoder.py`), LoRA / full-SFT Qwen3.5 & Gemma 4 decoders (`decoder.py`), and vLLM open-teacher labelling (`teacher.py`).
 - `detect/` & `serve/` — Off-the-shelf zero-label detector runner (`detect/run_detectors.py`) and A6000 throughput/latency benchmark (`serve/bench.py`).
 - `eval/` — GPU-free evaluation library: PR-AUC, max-F1, operating-point recall/precision, ECE, Brier, Balanced Brier Score (`metrics.py`), temperature / Platt / isotonic calibration (`calibrate.py`), split-conformal FPR control (`conformal.py`), Krippendorff's $\alpha_K$ (`stability.py`), break-even budgets $N^\star$ (`breakeven.py`), and paired item/cluster bootstrap (`fastboot.py`).
-- `analysis/` — One-command paper reproduction pipeline (`run_all.sh`) generating every CSV table (`results/tables/`), vector PDF figure (`results/figures/`), and `results/paper_numbers.json`.
-- `docs/` — Frozen protocol decision log (`decisions.md`), prior-art search log (`prior-art-log.md`), and anonymized label-semantics alignment audit sheets (`docs/audit/`).
+- `analysis/` — One-command paper reproduction pipeline (`run_all.sh`) generating every CSV table (`results/tables/`), vector PDF figure (`results/figures/`), and `results/paper_numbers.json`; revision analyses (`rev_all.sh`, `rev_*.py`) write `results/revision/`.
+- `docs/` — Frozen protocol decision log (`decisions.md`), prior-art search log (`prior-art-log.md`), and anonymized label-semantics alignment audit sheets (`docs/audit/`, including the retained-split audit in `docs/audit/extended/`).
 
 ## Quickstart
 
@@ -43,14 +43,15 @@ export HF_TOKEN=hf_...
 .venv/bin/python data/download.py
 .venv/bin/python data/prepare.py
 .venv/bin/python analysis/audit_kappa.py   # reproduces Section IV-A1 alignment-audit kappas
+.venv/bin/python analysis/rev_audit.py --score   # retained-split (extended) audit kappas
 ```
 
 ### 3. Reproduce Every Table and Figure from the Zenodo Predictions Archive
 
-Download `label-budget-bench-predictions-v1.tar.gz` from https://doi.org/10.5281/zenodo.24243899, unpack it into the repository root, then run:
+Download `label-budget-bench-predictions-v1.1.tar.gz` from https://doi.org/10.5281/zenodo.24320189, unpack it into the repository root, then run:
 
 ```bash
-tar -xzf label-budget-bench-predictions-v1.tar.gz
+tar -xzf label-budget-bench-predictions-v1.1.tar.gz
 bash analysis/run_all.sh
 ```
 

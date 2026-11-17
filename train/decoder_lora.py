@@ -4,6 +4,9 @@ The input is the task's concise prompt through the model's chat template (thinki
 The score is the renormalized first-token probability P(Yes) / (P(Yes) + P(No)) at the
 generation position; training minimizes cross-entropy on that 2-way distribution, so the
 training objective and the evaluated probability are the same quantity.
+
+hp `prompt` (concise | detailed | none) selects the instruction; `none` is the item alone, as the
+encoders see it. N = 0 scores the prompted base model without fine-tuning (zero-shot reference).
 """
 from __future__ import annotations
 
@@ -48,19 +51,25 @@ class PromptEncoder:
 
     def __init__(self, tok, task: str, item_len: int, kind: str = "concise"):
         p = yaml.safe_load((ROOT / "labels" / "prompts" / f"{task}.yaml").read_text())
-        self.tok, self.instr, self.tpl = tok, p[kind], p["item_template"]
+        self.tok, self.tpl = tok, p["item_template"]
+        self.instr = None if kind == "none" else p[kind]
         self.overhead = len(self._ids("", ""))
         self.L = self.overhead + item_len
 
-    def _text(self, a: str, b: str) -> str:
-        msgs = [{"role": "system", "content": self.instr},
-                {"role": "user", "content": self.tpl.format(text_a=a, text_b=b)}]
+    def _chat(self, msgs: list[dict]) -> str:
         try:
             return self.tok.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True,
                                                 enable_thinking=False)
         except Exception:
-            msgs = [{"role": "user", "content": self.instr + "\n\n" + msgs[1]["content"]}]
+            if msgs[0]["role"] == "system":
+                msgs = [{"role": "user", "content": msgs[0]["content"] + "\n\n" + msgs[1]["content"]}]
             return self.tok.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
+
+    def _text(self, a: str, b: str) -> str:
+        if self.instr is None:   # no guideline, no tags, no question: the item text only
+            return self._chat([{"role": "user", "content": a + ("\n\n" + b if b else "")}])
+        return self._chat([{"role": "system", "content": self.instr},
+                           {"role": "user", "content": self.tpl.format(text_a=a, text_b=b)}])
 
     def _ids(self, a: str, b: str) -> list[int]:
         return self.tok(self._text(a, b), add_special_tokens=False)["input_ids"]
@@ -178,6 +187,14 @@ def run(spec) -> dict:
     yes_id, no_id = answer_ids(tok)
     full_sft = not hp.get("lora", True)                    # ablation: full fine-tuning, fp32 master weights
     model = load_model(cfg["hf_id"], dev, torch.float32 if full_sft and dev.type == "cuda" else dtype)
+    enc = PromptEncoder(tok, spec.task, L, hp.get("prompt", "concise"))
+    if spec.n == 0:
+        model.eval()
+        t0 = time.time()
+        preds = {split: (df, predict(model, enc.many(df), pad_id, yes_id, no_id, dev, TRAIN_CFG["eval_batch_tokens"]))
+                 for split, df in eval_sets(spec).items()}
+        return preds, dict(train_steps=0, train_seconds=0.0, eval_seconds=round(time.time() - t0, 1), n_train=0,
+                           max_len=L, hf_id=cfg["hf_id"], hp=hp, trainable_params=0, **gpu_info())
     if full_sft:
         for n, p_ in model.named_parameters():
             p_.requires_grad = not re.match(VISION, n)
@@ -192,7 +209,6 @@ def run(spec) -> dict:
         score2 = lambda m, ids, mask: m(ids, mask)  # noqa: E731
     else:
         score2 = lambda m, ids, mask: yes_no_logits(m, ids, mask, yes_id, no_id)  # noqa: E731
-    enc = PromptEncoder(tok, spec.task, L)
     train_df = training_set(spec)
     seqs = enc.many(train_df)
     labels = torch.tensor(train_df.label.to_numpy(dtype="int64"), device=dev)

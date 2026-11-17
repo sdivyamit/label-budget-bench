@@ -49,10 +49,10 @@ def mix_cells(task: str, top: int):
                 yield n, s, f"mix{m}_{src}"
 
 
-def ablation_jobs() -> list[dict]:
+def ablation_jobs(key: str = "ablations", stage: str = "ablation") -> list[dict]:
     family_of = {m: f.get("family", k) for k, f in SWEEP["families"].items() for m in f["models"]}
     out = []
-    for a in SWEEP.get("ablations", []):
+    for a in SWEEP.get(key, []):
         for task in a.get("tasks", SWEEP["task_order"]):
             lv = levels(task)
             for model in a["models"]:
@@ -61,8 +61,8 @@ def ablation_jobs() -> list[dict]:
                         cells = list(mix_cells(task, lv[-1]))
                     else:
                         ns = lv if a["n"] == "all" else [lv[-1] if n == "top" else n for n in a["n"]]
-                        cells = [(n, s, labels) for n in ns for s in seeds_for(n)]
-                    out += [job(family_of[model], model, task, n, s, lab, "ablation", a["hp"], a["tag"])
+                        cells = [(n, s, labels) for n in ns for s in a.get("seeds", seeds_for(n))]
+                    out += [job(family_of[model], model, task, n, s, lab, stage, a["hp"], a["tag"])
                             for n, s, lab in cells]
     return out
 
@@ -88,11 +88,17 @@ def expand() -> list[dict]:
                         for s in seeds_for(n):
                             jobs.append(job(family, model, task, n, s, labels, f"{t_i}-{task}"))
     jobs += ablation_jobs()
+    jobs += ablation_jobs("revision", "revision")
     seen, out = set(), []
     for j in jobs:
         if j["id"] not in seen:
             seen.add(j["id"])
             out.append(j)
+    rerun = set(SWEEP.get("revision_rerun", []))
+    assert seen >= rerun, rerun - seen
+    for j in out:
+        if j["id"] in rerun:
+            j["stage"] = "revision"
     first = SWEEP.get("run_first", [])
     assert seen >= set(first), set(first) - seen
     head = [j for j in out if j["stage"] in ("gate_a", "hp")]

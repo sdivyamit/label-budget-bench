@@ -1,0 +1,10 @@
+audit,task,split,pair,n,kappa,lo,hi,agreement,pos_a,pos_b,unsure,passes_06
+t2_beavertails_pool,t2_response_safety,pool,annotator_1_vs_gold,100,0.6188,0.46,0.7615,0.81,0.51,0.58,0,True
+t2_beavertails_pool,t2_response_safety,pool,annotator_2_vs_gold,100,0.56,0.3964,0.72,0.78,0.5,0.58,0,False
+t2_beavertails_pool,t2_response_safety,pool,between_annotators,100,0.78,0.6485,0.8983,0.89,0.51,0.5,0,False
+t1_data2txt_shift,t1_rag_hallucination,shift,annotator_1_vs_gold,100,0.3922,0.1876,0.5834,0.77,0.82,0.69,0,False
+t1_data2txt_shift,t1_rag_hallucination,shift,annotator_2_vs_gold,100,0.5455,0.3647,0.7063,0.79,0.6,0.69,0,False
+t1_data2txt_shift,t1_rag_hallucination,shift,between_annotators,100,0.4954,0.3396,0.6575,0.78,0.82,0.6,0,False
+t3_heldout_groups,t3_implicit_toxicity,shift,annotator_1_vs_gold,100,0.6266,0.4737,0.7619,0.81,0.54,0.39,0,True
+t3_heldout_groups,t3_implicit_toxicity,shift,annotator_2_vs_gold,100,0.772,0.6352,0.8921,0.89,0.42,0.39,0,True
+t3_heldout_groups,t3_implicit_toxicity,shift,between_annotators,100,0.7235,0.5908,0.841,0.86,0.54,0.42,0,True

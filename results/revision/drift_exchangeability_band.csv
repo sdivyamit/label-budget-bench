@@ -1,0 +1,7 @@
+task,eval_set,n_val_neg,n_test_neg,expected,band_lo,band_hi,models,models_above,seeds,seeds_above,model_min,model_max
+t1_rag_hallucination,test,689,1411,0.0493,0.0312,0.0702,8,0,24,0,0.0293,0.0425
+t1_rag_hallucination,shift,689,942,0.0493,0.0297,0.0722,8,7,24,17,0.0414,0.3924
+t2_response_safety,test,426,1288,0.0492,0.028,0.0753,8,0,24,0,0.0437,0.0572
+t2_response_safety,shift,426,1425,0.0492,0.0281,0.0751,8,0,24,0,0.014,0.04
+t3_implicit_toxicity,test,624,435,0.0496,0.0253,0.0782,8,1,24,5,0.0552,0.0789
+t3_implicit_toxicity,shift,624,1287,0.0496,0.0303,0.0723,8,0,24,0,0.0264,0.0502

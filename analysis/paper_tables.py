@@ -1,7 +1,6 @@
-"""results -> paper/latex/tables/*.tex (table bodies for the paper; no number is typed by hand).
+"""results + results/revision -> paper/latex/tables/*.tex (table bodies for main.tex and supplement.tex).
 
-Reads results/paper_numbers.json (seed means with bootstrap CIs), results/tables/*.csv and results/metrics.parquet.
-A table whose inputs are missing is written with a red "pending" row instead of failing.
+No number is typed by hand in LaTeX; nothing in results/ is modified (preserving FREEZE-2026-11-15.sha256).
 
   python analysis/paper_tables.py
 """
@@ -14,28 +13,71 @@ from pathlib import Path
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
-RES, TAB, OUT = ROOT / "results", ROOT / "results" / "tables", ROOT / "paper" / "latex" / "tables"
+RES = ROOT / "results"
+TAB = RES / "tables"
+REV = RES / "revision"
+OUT = ROOT / "paper" / "latex" / "tables"
+
 TASKS = {"t1_rag_hallucination": "T1", "t2_response_safety": "T2", "t3_implicit_toxicity": "T3"}
 TOP = {"t1_rag_hallucination": 8651, "t2_response_safety": 20000, "t3_implicit_toxicity": 5920}
-NAME = {"tfidf_lr": "TF-IDF + LR", "modernbert_base": "ModernBERT-base", "modernbert_large": "ModernBERT-large",
-        "deberta_v3_large": "DeBERTa-v3-large", "gemma4_e2b": "Gemma 4 E2B", "qwen35_2b": "Qwen3.5-2B",
-        "gemma4_e4b": "Gemma 4 E4B", "qwen35_4b": "Qwen3.5-4B", "gpt61_sol": "GPT-6.1 Sol",
-        "gpt6_luna": "GPT-6 Luna", "gemini4_argon": "Gemini 4 Argon", "gemini35_flash_lite": "Gemini 3.5 Flash-Lite",
-        "jev": "Jev"}
-FAMILY = {"tfidf_lr": "classical", "modernbert_base": "encoder", "modernbert_large": "encoder",
-          "deberta_v3_large": "encoder", "gemma4_e2b": "decoder", "qwen35_2b": "decoder", "gemma4_e4b": "decoder",
-          "qwen35_4b": "decoder"}
+NAME = {
+    "tfidf_lr": "TF-IDF + LR",
+    "modernbert_base": "ModernBERT-base",
+    "modernbert_large": "ModernBERT-large",
+    "deberta_v3_large": "DeBERTa-v3-large",
+    "gemma4_e2b": "Gemma 4 E2B",
+    "qwen35_2b": "Qwen3.5-2B",
+    "gemma4_e4b": "Gemma 4 E4B",
+    "qwen35_4b": "Qwen3.5-4B",
+    "gpt61_sol": "GPT-6.1 Sol",
+    "gpt6_luna": "GPT-6 Luna",
+    "gemini4_argon": "Gemini 4 Argon",
+    "gemini35_flash_lite": "Gemini 3.5 Flash-Lite",
+    "jev": "Jev",
+}
+FAMILY = {
+    "tfidf_lr": "classical",
+    "modernbert_base": "encoder",
+    "modernbert_large": "encoder",
+    "deberta_v3_large": "encoder",
+    "gemma4_e2b": "decoder",
+    "qwen35_2b": "decoder",
+    "gemma4_e4b": "decoder",
+    "qwen35_4b": "decoder",
+}
 TRAINED = list(FAMILY)
+DECODER_LIST = ["gemma4_e2b", "qwen35_2b", "gemma4_e4b", "qwen35_4b"]
 FULL = ["tfidf_lr", "modernbert_base", "modernbert_large", "deberta_v3_large", "gemma4_e2b", "qwen35_2b"]
 HOSTED = ["gpt61_sol", "gemini4_argon", "gpt6_luna", "gemini35_flash_lite"]
+DETECTOR = {
+    "lettucedetect_large": "LettuceDetect-large",
+    "hhem21": "HHEM-2.1-Open",
+    "llamaguard3_8b": "Llama Guard 3 8B",
+    "llamaguard3_1b": "Llama Guard 3 1B",
+    "shieldgemma_2b": "ShieldGemma-2B",
+    "wildguard_7b": "WildGuard-7B",
+    "toxigen_roberta": "ToxiGen-RoBERTa",
+}
 
 
 def f3(v) -> str:
-    return "--" if v is None or (isinstance(v, float) and math.isnan(v)) else f"{v:.3f}"
+    return "--" if v is None or (isinstance(v, float) and math.isnan(v)) else f"{float(v):.3f}"
 
 
 def budget(v) -> str:
-    return "n.r." if v is None or (isinstance(v, float) and math.isnan(v)) else f"{int(v):,}".replace(",", "{,}")
+    if v is None:
+        return "n.r."
+    if isinstance(v, str):
+        if v.strip().lower() in ("not reached", "n.r.", "nan", "none", "inf", ""):
+            return "n.r."
+        v = float(v)
+    if not math.isfinite(float(v)):
+        return "n.r."
+    return f"{int(round(float(v))):,}".replace(",", "{,}")
+
+
+def neg(x: float) -> str:
+    return f"{0.0 if abs(x) < 0.0005 else x:+.3f}".replace("-", "$-$")
 
 
 def write(name: str, lines: list[str]) -> None:
@@ -52,24 +94,168 @@ def cell(c: dict, task: str, eval_set: str, key: str):
     return c.get(f"{task}/{eval_set}", {}).get(key)
 
 
+def references() -> None:
+    """Table 3: Hosted LLMs, zero-shot small decoders (N=0), off-the-shelf detectors, and gold N_max baselines."""
+    c = cells()
+    zs = pd.read_csv(REV / "zeroshot.csv")
+    zs_c = zs[zs.cond == "zeroshot-concise"]
+    bc = pd.read_csv(REV / "breakeven_curves.csv")
+    bc_vt = bc[(bc.metric == "f1_valthr") & (bc.ref_kind == "better")]
+    lines = []
+
+    def fmt_cell(task, es, key, metric):
+        v = cell(c, task, es, f"{key}/{metric}")
+        return "--" if not v else f3(v["mean"])
+
+    # 1. Hosted LLMs (zero-label verdicts; f1_at_05 == f1_valthr)
+    for mod in HOSTED + ["jev"]:
+        row = [NAME[mod]]
+        for task in TASKS:
+            for es in ("test", "shift_api"):
+                row.append(fmt_cell(task, es, f"api/{mod}/none/n0/concise", "f1_at_05"))
+        for task in TASKS:
+            row.append(fmt_cell(task, "shift_api", f"api/{mod}/none/n0/concise", "pr_auc") if mod == "jev" else "--")
+        lines.append(" & ".join(row) + r" \\")
+
+    # 2. Zero-shot small decoders (N = 0, concise prompt, raw 0.5 cut-off = zero labels)
+    lines.append(r"\midrule")
+    for mod in DECODER_LIST:
+        row = [NAME[mod] + r", zero-shot ($N{=}0$)"]
+        for task in TASKS:
+            for es in ("test", "shift_api"):
+                v = zs_c[(zs_c.task == task) & (zs_c.eval_set == es) & (zs_c.model == mod) & (zs_c.metric == "f1_at_05")]["mean"]
+                row.append(f3(v.iloc[0]) if len(v) else "--")
+        for task in TASKS:
+            v = zs_c[(zs_c.task == task) & (zs_c.eval_set == "shift_api") & (zs_c.model == mod) & (zs_c.metric == "pr_auc")]["mean"]
+            row.append(f3(v.iloc[0]) if len(v) else "--")
+        lines.append(" & ".join(row) + r" \\")
+
+    # 3. Off-the-shelf detectors
+    det = pd.read_parquet(RES / "metrics.parquet")
+    det = det[(det.family == "detector") & (det.calib == "raw") & det.eval_set.isin(["test", "shift_api"])]
+    lines.append(r"\midrule")
+    order = sorted(det.model.unique(), key=lambda x: list(DETECTOR).index(x) if x in DETECTOR else len(DETECTOR))
+    for mod in order:
+        g = det[det.model == mod]
+        row = [DETECTOR.get(mod, mod.replace("_", "-"))]
+        for t in TASKS:
+            for es in ("test", "shift_api"):
+                v = g[(g.task == t) & (g.eval_set == es) & (g.metric == "f1_at_05")].value
+                row.append(f3(v.mean()) if len(v) else "--")
+        for t in TASKS:
+            v = g[(g.task == t) & (g.eval_set == "shift_api") & (g.metric == "pr_auc")].value
+            row.append(f3(v.mean()) if len(v) else "--")
+        lines.append(" & ".join(row) + r" \\")
+
+    # 4. Trained baselines at N_max (deployable validation-chosen threshold F1 + shift PR-AUC)
+    lines.append(r"\midrule")
+    for mod in ("modernbert_large", "qwen35_2b", "qwen35_4b"):
+        row = [NAME[mod] + r", gold, $N_{\max}$$^\S$"]
+        for task in TASKS:
+            for es in ("test", "shift_api"):
+                v = bc_vt[(bc_vt.task == task) & (bc_vt.eval_set == es) & (bc_vt.model == mod) & (bc_vt.n == TOP[task])]["q"]
+                row.append(f3(v.iloc[0]) if len(v) else fmt_cell(task, es, f"{FAMILY[mod]}/{mod}/gold/n{TOP[task]}", "f1_at_05"))
+        for task in TASKS:
+            row.append(fmt_cell(task, "shift_api", f"{FAMILY[mod]}/{mod}/gold/n{TOP[task]}", "pr_auc"))
+        lines.append(" & ".join(row) + r" \\")
+
+    # 5. Constant-positive F1 floor row (Reviewer Point 1 & Question 3)
+    be = pd.read_csv(REV / "breakeven.csv")
+    be_f = be[(be.metric == "f1_valthr") & (be.ref_kind == "better")]
+    fl_row = [r"All-positive $F_1$ floor"]
+    for task in TASKS:
+        for es in ("test", "shift_api"):
+            r = be_f[(be_f.task == task) & (be_f.eval_set == es)]
+            fl_row.append(f3(r.floor.iloc[0]) if len(r) else "--")
+    fl_row += ["--", "--", "--"]
+    lines.append(r"\midrule")
+    lines.append(" & ".join(fl_row) + r" \\")
+    write("references", lines)
+
+
 def breakeven() -> None:
-    t = pd.read_csv(TAB / "table4_breakeven.csv")
+    """Table 4: Deployable validation-threshold F1 break-even (N*_mean / N*_var) vs stronger frontier LLM."""
+    t = pd.read_csv(REV / "breakeven.csv")
+    sub = t[(t.metric == "f1_valthr") & (t.ref_kind == "better")]
     lines = []
     for m in TRAINED:
+        use_zs = m in DECODER_LIST
         row = [NAME[m]]
         for task in TASKS:
             for es in ("test", "shift_api"):
-                r = t[(t.task == task) & (t.eval_set == es) & (t.model == m)]
+                r = sub[(sub.task == task) & (sub.eval_set == es) & (sub.model == m) & (sub.with_zeroshot == use_zs)]
                 row.append("--" if r.empty else f"{budget(r.n_star_mean.iloc[0])} / {budget(r.n_star_var.iloc[0])}")
         lines.append(" & ".join(row) + r" \\")
         if m in ("tfidf_lr", "deberta_v3_large"):
             lines.append(r"\midrule")
-    ref = [r"$q_{\mathrm{ref}}$ (better frontier)"]
+
+    ref_row = [r"$q_{\mathrm{ref}}$ (better frontier)"]
+    sd_row = [r"$\sigma_{\mathrm{ref}}$ (repeat-API SD)"]
+    fl_row = [r"All-positive $F_1$ floor"]
     for task in TASKS:
         for es in ("test", "shift_api"):
-            r = t[(t.task == task) & (t.eval_set == es)]
-            ref.append(f3(r.q_ref.iloc[0]) if len(r) else "--")
-    write("breakeven", lines + [r"\midrule", " & ".join(ref) + r" \\"])
+            r = sub[(sub.task == task) & (sub.eval_set == es)]
+            if len(r):
+                ref_row.append(f3(r.q_ref.iloc[0]))
+                sv = float(r.sd_ref.iloc[0])
+                sd_row.append(f"{sv:.4f}" if sv < 0.001 else f"{sv:.3f}")
+                fl_row.append(f3(r.floor.iloc[0]))
+            else:
+                ref_row.append("--")
+                sd_row.append("--")
+                fl_row.append("--")
+    lines += [
+        r"\midrule",
+        " & ".join(ref_row) + r" \\",
+        " & ".join(sd_row) + r" \\",
+        " & ".join(fl_row) + r" \\",
+    ]
+    write("breakeven", lines)
+
+
+def breakeven_weaker() -> None:
+    """Supplement Table S1: Multi-panel break-even sensitivity (weaker ref, raw F1@0.5, 90% CIs, oracle max-F1)."""
+    t = pd.read_csv(REV / "breakeven.csv")
+    panels = [
+        ("Deployable val-threshold $F_1$ vs weaker frontier reference ($N^*_{\\mathrm{mean}} / N^*_{\\mathrm{var}}$)",
+         "f1_valthr", "weaker", "pair"),
+        ("Zero-validation-label $F_1@0.5$ vs better frontier reference ($N^*_{\\mathrm{mean}} / N^*_{\\mathrm{var}}$)",
+         "f1_at_05", "better", "pair"),
+        ("Deployable val-threshold $F_1$ 90\\% two-level bootstrap interval $[N^*_{0.05}, N^*_{0.95}]$ vs better frontier",
+         "f1_valthr", "better", "ci90"),
+        ("Non-deployable oracle $\\max\\text{-}F_1$ ceiling vs better frontier reference ($N^*_{\\mathrm{mean}} / N^*_{\\mathrm{var}}$)",
+         "max_f1", "better", "pair"),
+    ]
+    lines = []
+    for idx, (title, metric, ref_kind, mode) in enumerate(panels):
+        if idx > 0:
+            lines.append(r"\midrule")
+        lines.append(rf"\multicolumn{{7}}{{@{{}}l}}{{\emph{{{title}}}}} \\")
+        sub = t[(t.metric == metric) & (t.ref_kind == ref_kind)]
+        for m in TRAINED:
+            use_zs = m in DECODER_LIST
+            row = [NAME[m]]
+            for task in TASKS:
+                for es in ("test", "shift_api"):
+                    r = sub[(sub.task == task) & (sub.eval_set == es) & (sub.model == m) & (sub.with_zeroshot == use_zs)]
+                    if r.empty:
+                        row.append("--")
+                    elif mode == "pair":
+                        row.append(f"{budget(r.n_star_mean.iloc[0])} / {budget(r.n_star_var.iloc[0])}")
+                    else:
+                        row.append(f"[{budget(r.n_star_p05.iloc[0])}, {budget(r.n_star_p95.iloc[0])}]")
+            lines.append(" & ".join(row) + r" \\")
+        if ref_kind == "weaker":
+            ref = [r"$q_{\mathrm{ref}}$ (weaker frontier)"]
+            fl = [r"All-positive $F_1$ floor"]
+            for task in TASKS:
+                for es in ("test", "shift_api"):
+                    r = sub[(sub.task == task) & (sub.eval_set == es)]
+                    ref.append(f3(r.q_ref.iloc[0]) if len(r) else "--")
+                    fl.append(f3(r.floor.iloc[0]) if len(r) else "--")
+            lines.append(" & ".join(ref) + r" \\")
+            lines.append(" & ".join(fl) + r" \\")
+    write("breakeven_weaker", lines)
 
 
 def teachers() -> None:
@@ -89,146 +275,216 @@ def teachers() -> None:
     write("teachers", lines)
 
 
-def neg(x: float) -> str:
-    return f"{0.0 if abs(x) < 0.0005 else x:+.3f}".replace("-", "$-$")
-
-
 def gaps() -> None:
-    ci = pd.read_csv(TAB / "table5b_plateau_gap.csv").set_index(["task", "model", "eval_set", "n", "labels"])
-    blocks = [("Frontier teacher, $N=5{,}000$", "frontier_teacher", lambda task: 5000),
-              ("Open teacher, $N=N_{\\max}$", "open_teacher", lambda task: TOP[task]),
-              ("Frontier teacher + 1{,}000 gold, $N=5{,}000$", "mix1000_frontier_teacher", lambda task: 5000),
-              ("Open teacher + 1{,}000 gold, $N=N_{\\max}$", "mix1000_open_teacher", lambda task: TOP[task])]
+    """Table 6 (main) and Table S2 (supplement) using two-level bootstrap CIs and 5-seed T2 cells."""
+    ci = pd.read_csv(REV / "table_s2_two_level.csv").set_index(["task", "model", "eval_set", "n", "labels"])
+    blocks = [
+        ("Frontier teacher, $N=5{,}000$", "frontier_teacher", lambda task: 5000),
+        ("Open teacher, $N=5{,}000$", "open_teacher", lambda task: 5000),
+        ("Open teacher, $N=N_{\\max}$", "open_teacher", lambda task: TOP[task]),
+        ("Frontier teacher + 1{,}000 gold, $N=5{,}000$", "mix1000_frontier_teacher", lambda task: 5000),
+        ("Open teacher + 1{,}000 gold, $N=N_{\\max}$", "mix1000_open_teacher", lambda task: TOP[task]),
+    ]
     main, supp = [], []
     for i, (title, labels, n_of) in enumerate(blocks):
         head = rf"\multicolumn{{7}}{{@{{}}l}}{{\emph{{{title}}}}} \\"
         supp.append(head)
-        if i < 2:
+        if i < 3:
             main.append(head)
         for m in FULL:
-            row, row_ci = [NAME[m]], [NAME[m]]
+            row_ci = [NAME[m]]
             for task in TASKS:
                 n = n_of(task)
                 for es in ("test", "shift"):
                     key = (task, m, es, n, labels)
                     if key in ci.index:
                         r = ci.loc[key]
-                        row.append(neg(-r.gap))
-                        row_ci.append(rf"{neg(-r.gap)} [{neg(-r.hi)}, {neg(-r.lo)}]")
+                        # r.gap is gold - teacher; display teacher - gold = -r.gap
+                        row_ci.append(rf"{neg(-r.gap)} [{neg(-r.two_hi)},\,{neg(-r.two_lo)}]")
                     else:
-                        row.append("--")
                         row_ci.append("--")
-            if i < 2:
-                main.append(" & ".join(row) + r" \\")
+            if i < 3:
+                main.append(" & ".join(row_ci) + r" \\")
             supp.append(" & ".join(row_ci) + r" \\")
     write("gaps", main)
     write("gaps_ci", supp)
 
 
-def drift() -> None:
-    m = pd.read_parquet(RES / "metrics.parquet")
-    m = m[(m.tag.fillna("") == "") & (m.metric == "at_fpr05_fpr") & m.eval_set.isin(["test", "shift"])
-          & (m.labels == "gold")]
-    m = m[m.n == m.task.map(TOP)]
-    for name, spec in {"drift": [("conformal", None)],
-                       "drift_all": [("raw", "Raw validation threshold"), ("isotonic", "Isotonic")]}.items():
-        lines = []
-        for calib, title in spec:
-            if title:
-                lines.append(rf"\multicolumn{{7}}{{@{{}}l}}{{\emph{{{title}}}}} \\")
-            for mod in TRAINED:
-                row = [NAME[mod]]
-                for task in TASKS:
-                    for es in ("test", "shift"):
-                        v = m[(m.task == task) & (m.model == mod) & (m.eval_set == es) & (m.calib == calib)].value
-                        row.append("--" if v.empty else (f"{v.mean():.3f}" if len(v) < 2 else
-                                                          f"{v.mean():.3f}\\,$\\pm$\\,{v.std():.3f}"))
-                lines.append(" & ".join(row) + r" \\")
-        write(name, lines)
-
-
-def references() -> None:
-    c = cells()
-    a = pd.read_csv(RES / "api_metrics.csv")
+def calibration_main() -> None:
+    """Table 7 (main): Simultaneous 6-metric calibration at N_max on gold labels across raw, temp, isotonic, plus Jev."""
+    cf = pd.read_csv(REV / "calibration_full.csv")
+    cf_tr = cf[cf["tag"].isna() & (cf["labels"] == "gold")]
+    cf_tr = cf_tr[cf_tr["n"] == cf_tr["task"].map(TOP)]
+    cf_jev = cf[(cf["model"] == "jev") & (cf["tag"] == "concise")]
     lines = []
+    es_label = {"test": "ID", "shift": "Shift"}
+    for task, tshort in TASKS.items():
+        for es in ("test", "shift"):
+            for mod in ("modernbert_large", "qwen35_2b"):
+                sub = cf_tr[(cf_tr.task == task) & (cf_tr.eval_set == es) & (cf_tr.model == mod)].set_index("calib")
+                if sub.empty:
+                    continue
+                raw = sub.loc["raw"]
+                tmp = sub.loc["temperature"]
+                iso = sub.loc["isotonic"]
+                row = [
+                    tshort if (es == "test" and mod == "modernbert_large") else "",
+                    es_label[es] if mod == "modernbert_large" else "",
+                    NAME[mod],
+                    f3(raw.ece), f3(raw.ece_mass15), f3(raw.brier), f3(raw.bbs), f3(raw.bs_correct), f3(raw.bs_error),
+                    f3(tmp.ece), f3(tmp.bbs), f3(tmp.bs_error),
+                    f3(iso.ece), f3(iso.bbs),
+                ]
+                lines.append(" & ".join(row) + r" \\")
+            es_jev = "test" if es == "test" else "shift_api"
+            j = cf_jev[(cf_jev.task == task) & (cf_jev.eval_set == es_jev)]
+            if len(j):
+                jr = j.iloc[0]
+                jmark = "" if es == "test" else r"$^\dagger$"
+                row = [
+                    "", "", NAME["jev"] + " ($N{=}0$)" + jmark,
+                    f3(jr.ece), f3(jr.ece_mass15), f3(jr.brier), f3(jr.bbs), f3(jr.bs_correct), f3(jr.bs_error),
+                    "--", "--", "--", "--", "--",
+                ]
+                lines.append(" & ".join(row) + r" \\")
+        if task != "t3_implicit_toxicity":
+            lines.append(r"\midrule")
+    write("calibration_main", lines)
 
-    def fmt(task, es, key, metric):
-        v = cell(c, task, es, f"{key}/{metric}")
-        return "--" if not v else f3(v["mean"])
 
-    for mod in HOSTED + ["jev"]:
+def bserror() -> None:
+    """Supplement Table S4: Full 6-metric calibration across all 8 trained models (raw, temperature, isotonic) + Jev."""
+    cf = pd.read_csv(REV / "calibration_full.csv")
+    cf_jev = cf[(cf["model"] == "jev") & (cf["tag"] == "concise")]
+    cf = cf[cf["tag"].isna() & (cf["labels"] == "gold") & cf["eval_set"].isin(["test", "shift"])]
+    cf = cf[cf["n"] == cf["task"].map(TOP)]
+    lines = []
+    for calib, label in (("raw", "Uncalibrated (raw)"), ("temperature", "Temperature scaling"), ("isotonic", "Isotonic regression")):
+        if lines:
+            lines.append(r"\midrule")
+        lines.append(rf"\multicolumn{{13}}{{@{{}}l}}{{\emph{{{label}}}}} \\")
+        sub = cf[cf.calib == calib]
+        for mod in TRAINED:
+            row = [NAME[mod]]
+            for task in TASKS:
+                for es in ("test", "shift"):
+                    r = sub[(sub.task == task) & (sub.model == mod) & (sub.eval_set == es)]
+                    if r.empty:
+                        row += ["--", "--"]
+                    else:
+                        ri = r.iloc[0]
+                        row += [f"{f3(ri.ece)}/{f3(ri.ece_mass15)}", f"{f3(ri.bbs)}/{f3(ri.bs_error)}"]
+            lines.append(" & ".join(row) + r" \\")
+        if calib == "raw" and len(cf_jev):
+            row = [r"Jev ($N{=}0$)$^\dagger$"]
+            for task in TASKS:
+                for es in ("test", "shift_api"):
+                    r = cf_jev[(cf_jev.task == task) & (cf_jev.eval_set == es)]
+                    if r.empty:
+                        row += ["--", "--"]
+                    else:
+                        ri = r.iloc[0]
+                        row += [f"{f3(ri.ece)}/{f3(ri.ece_mass15)}", f"{f3(ri.bbs)}/{f3(ri.bs_error)}"]
+            lines.append(" & ".join(row) + r" \\")
+    write("bserror", lines)
+
+
+def drift() -> None:
+    """Table 8 (main): Conformal FPR at alpha=0.05, finite-sample exchangeability band, and T1 target-neg recalibration."""
+    dfpr = pd.read_csv(REV / "drift_fpr.csv")
+    exch = pd.read_csv(REV / "drift_exchangeability_band.csv")
+    recal = pd.read_csv(REV / "recal_target_negatives_summary.csv")
+
+    # Main drift table: conformal + exchangeability footer + T1 target-negative recalibration rows
+    sub = dfpr[dfpr.method == "conformal"]
+    lines = []
+    for mod in TRAINED:
         row = [NAME[mod]]
         for task in TASKS:
-            for es in ("test", "shift_api"):
-                row.append(fmt(task, es, f"api/{mod}/none/n0/concise", "f1_at_05"))
-        for task in TASKS:
-            row.append(fmt(task, "shift_api", f"api/{mod}/none/n0/concise", "pr_auc") if mod == "jev" else "--")
+            for es in ("test", "shift"):
+                r = sub[(sub.task == task) & (sub.model == mod) & (sub.eval_set == es)]
+                if r.empty:
+                    row.append("--")
+                else:
+                    ri = r.iloc[0]
+                    cell_txt = f"{ri['mean']:.3f}\\,$\\pm$\\,{ri['sd']:.3f}"
+                    if int(ri["n_collapsed"]) > 0:
+                        cell_txt += r"$^\ddagger$"
+                    row.append(cell_txt)
         lines.append(" & ".join(row) + r" \\")
-    det = pd.read_parquet(RES / "metrics.parquet")
-    det = det[(det.family == "detector") & (det.calib == "raw") & det.eval_set.isin(["test", "shift_api"])]
-    lines.append(r"\midrule")
-    if det.empty:
-        lines.append(r"\multicolumn{10}{@{}l}{\textcolor{red}{Off-the-shelf detectors: pending (run after the sweep)}} \\")
-    order = sorted(det.model.unique(), key=lambda x: list(DETECTOR).index(x) if x in DETECTOR else len(DETECTOR))
-    for mod in order:
-        g = det[det.model == mod]
-        row = [DETECTOR.get(mod, mod.replace("_", "-"))]
-        for t in TASKS:
-            for es in ("test", "shift_api"):
-                v = g[(g.task == t) & (g.eval_set == es) & (g.metric == "f1_at_05")].value
-                row.append(f3(v.mean()) if len(v) else "")
-        for t in TASKS:
-            v = g[(g.task == t) & (g.eval_set == "shift_api") & (g.metric == "pr_auc")].value
-            row.append(f3(v.mean()) if len(v) else "")
-        lines.append(" & ".join(row) + r" \\")
-    lines.append(r"\midrule")
-    for mod in ("modernbert_large", "qwen35_2b", "qwen35_4b"):
-        row = [NAME[mod] + r", gold, $N_{\max}$"]
-        for task in TASKS:
-            for es in ("test", "shift_api"):
-                row.append(fmt(task, es, f"{FAMILY[mod]}/{mod}/gold/n{TOP[task]}", "f1_at_05"))
-        for task in TASKS:
-            row.append(fmt(task, "shift_api", f"{FAMILY[mod]}/{mod}/gold/n{TOP[task]}", "pr_auc"))
-        lines.append(" & ".join(row) + r" \\")
-    write("references", lines)
 
+    band_row = [r"95\% exchangeability band"]
+    nneg_row = [r"$(n_{\mathrm{val},-},\,n_{\mathrm{eval},-})$"]
+    seeds_row = [r"Seed runs above band"]
+    for task in TASKS:
+        for es in ("test", "shift"):
+            er = exch[(exch.task == task) & (exch.eval_set == es)].iloc[0]
+            band_row.append(f"[{er.band_lo:.3f}, {er.band_hi:.3f}]")
+            nneg_row.append(f"({int(er.n_val_neg)}, {int(er.n_test_neg)})")
+            seeds_row.append(f"{int(er.seeds_above)}/{int(er.seeds)}")
+    lines += [
+        r"\midrule",
+        " & ".join(band_row) + r" \\",
+        " & ".join(nneg_row) + r" \\",
+        " & ".join(seeds_row) + r" \\",
+    ]
+    write("drift", lines)
 
-DETECTOR = {"lettucedetect_large": "LettuceDetect-large", "hhem21": "HHEM-2.1-Open",
-            "llamaguard3_8b": "Llama Guard 3 8B", "llamaguard3_1b": "Llama Guard 3 1B",
-            "shieldgemma_2b": "ShieldGemma-2B", "wildguard_7b": "WildGuard-7B", "toxigen_roberta": "ToxiGen-RoBERTa"}
+    # Supplement Table S3: Raw, temperature, and isotonic FPR + Saerens EM prior-shift precision summary
+    supp_lines = []
+    for calib, title in (("raw", "Raw validation threshold"),
+                         ("temperature", "Temperature-scaled validation threshold"),
+                         ("isotonic", "Isotonic validation threshold")):
+        if supp_lines:
+            supp_lines.append(r"\midrule")
+        supp_lines.append(rf"\multicolumn{{7}}{{@{{}}l}}{{\emph{{{title}}}}} \\")
+        sc = dfpr[dfpr.method == calib]
+        for mod in TRAINED:
+            row = [NAME[mod]]
+            for task in TASKS:
+                for es in ("test", "shift"):
+                    r = sc[(sc.task == task) & (sc.model == mod) & (sc.eval_set == es)]
+                    if r.empty:
+                        row.append("--")
+                    else:
+                        ri = r.iloc[0]
+                        row.append(f"{ri['mean']:.3f}\\,$\\pm$\\,{ri['sd']:.3f}")
+            supp_lines.append(" & ".join(row) + r" \\")
+    write("drift_all", supp_lines)
 
 
 def serving() -> None:
-    """One row per model: items/s and USD per million items on T1/T2/T3, p95 single-request latency (ms)."""
+    """Table 9: items/s, p95 single-request latency (ms), and USD per million items on T1/T2/T3."""
     t = pd.read_csv(TAB / "table8_serving.csv")
     own, api = t[t.family != "api"], t[t.family == "api"]
     lines = []
-    if own.empty:
-        lines.append(r"\multicolumn{8}{@{}l}{\textcolor{red}{Serving runs: pending}} \\")
     for mod in TRAINED:
         r = own[own.model == mod].set_index("task")
         if r.empty:
             continue
         get = lambda task, col, f: f(r.loc[task, col]) if task in r.index else "--"
-        lines.append(" & ".join([NAME[mod]]
-                                + [get(task, "items_per_s", lambda v: f"{int(round(float(v))):,}".replace(",", "{,}")) for task in TASKS]
-                                + [get(task, "p95_ms", lambda v: f"{int(round(float(v)))}") for task in TASKS]
-                                + [get(task, "usd_per_million_items", lambda v: f"{v:.2f}") for task in TASKS])
-                     + r" \\")
+        lines.append(" & ".join(
+            [NAME[mod]]
+            + [get(task, "items_per_s", lambda v: f"{int(round(float(v))):,}".replace(",", "{,}")) for task in TASKS]
+            + [get(task, "p95_ms", lambda v: f"{int(round(float(v)))}") for task in TASKS]
+            + [get(task, "usd_per_million_items", lambda v: f"{v:.2f}") for task in TASKS]
+        ) + r" \\")
     if len(api):
         lines.append(r"\midrule")
+        lines.append(r"\multicolumn{10}{@{}l@{}}{\emph{Hosted API list price / $10^6$ items (excludes self-hosted ops; not comparable)}} \\")
         for mod in HOSTED + ["jev"]:
             r = api[api.model == mod].set_index("task")
             if len(r):
                 vals = [f"{r.loc[task, 'usd_per_million_items']:,.0f}".replace(",", "{,}") if task in r.index else "--"
                         for task in TASKS]
-                lines.append(" & ".join([NAME[mod] + r"$^\dagger$"] + ["--"] * 6 + vals) + r" \\")
+                mark = r"$^{\dagger\star}$" if mod in ("gemini4_argon", "jev") else r"$^\dagger$"
+                lines.append(" & ".join([NAME[mod] + mark] + ["--"] * 6 + vals) + r" \\")
     write("serving", lines)
 
 
 def comparisons() -> None:
-    t = pd.read_csv(TAB / "comparisons.csv")
-    cl = pd.read_csv(TAB / "comparisons_cluster.csv").set_index("id") if (TAB / "comparisons_cluster.csv").exists() else None
+    """Appendix H Table: Two-level bootstrap CIs + Holm-Bonferroni p-values + two-level cluster bootstrap CIs."""
+    t = pd.read_csv(REV / "comparisons_two_level.csv")
     metric = {"pr_auc": "PR-AUC", "f1_at_05": "F1@0.5", "ece": "ECE"}
     es = {"test": "ID", "shift": "shift", "shift_api": "shift$^\\dagger$"}
 
@@ -242,84 +498,71 @@ def comparisons() -> None:
 
     lines = []
     for r in t.to_dict("records"):
-        p = "$<$0.001" if r["p_holm"] < 0.001 else f"{r['p_holm']:.3f}"
-        c = "--" if cl is None or r["id"] not in cl.index else f"{neg(cl.loc[r['id'], 'lo'])}, {neg(cl.loc[r['id'], 'hi'])}"
-        lines.append(" & ".join([r["id"], TASKS[r["task"]] + " " + es[r["eval_set"]], metric[r["metric"]],
-                                 side(r["a"]) + " vs " + side(r["b"]), neg(r["diff"]),
-                                 f"{neg(r['lo'])}, {neg(r['hi'])}", p, c]) + r" \\")
+        ph = float(r["two_p_holm"])
+        # zero exceedances among B=10,000 replicates: two-sided p < 2/B, Holm over 12 comparisons < 12 x 2/B
+        p = f"$<${12 * 2 / 10_000:.4f}" if ph == 0 else (f"{ph:.4f}" if ph < 0.001 else f"{ph:.3f}")
+        tl_ci = f"{neg(r['two_lo'])}, {neg(r['two_hi'])}"
+        cl_ci = f"{neg(r['cl_lo'])}, {neg(r['cl_hi'])}"
+        lines.append(" & ".join([
+            r["id"], TASKS[r["task"]] + " " + es[r["eval_set"]], metric[r["metric"]],
+            side(r["a"]) + " vs " + side(r["b"]), neg(r["diff"]),
+            tl_ci, p, cl_ci,
+        ]) + r" \\")
     write("comparisons", lines)
 
 
-def breakeven_weaker() -> None:
-    t = pd.read_csv(TAB / "table4_breakeven.csv")
-    lines = []
-    for m in TRAINED:
-        row = [NAME[m]]
-        for task in TASKS:
-            for es in ("test", "shift_api"):
-                r = t[(t.task == task) & (t.eval_set == es) & (t.model == m)]
-                row.append("--" if r.empty else
-                           f"{budget(r.n_star_mean_weaker.iloc[0])} / {budget(r.n_star_var_weaker.iloc[0])}")
-        lines.append(" & ".join(row) + r" \\")
-    ref = [r"$q_{\mathrm{ref}}$ (weaker frontier)"]
-    for task in TASKS:
-        for es in ("test", "shift_api"):
-            r = t[(t.task == task) & (t.eval_set == es)]
-            ref.append(f3(r.q_ref_weaker.iloc[0]) if len(r) else "--")
-    write("breakeven_weaker", lines + [r"\midrule", " & ".join(ref) + r" \\"])
-
-
-def bserror() -> None:
-    m = pd.read_parquet(RES / "metrics.parquet")
-    m = m[(m.tag.fillna("") == "") & (m.labels == "gold") & m.metric.isin(["ece", "bs_error", "bbs"])
-          & m.eval_set.isin(["test", "shift"]) & m.calib.isin(["raw", "temperature"])]
-    m = m[m.n == m.task.map(TOP)]
-    lines = []
-    for mod in TRAINED:
-        row = [NAME[mod]]
-        for task in TASKS:
-            for metric, calib in (("ece", "temperature"), ("bs_error", "temperature")):
-                for es in ("test", "shift"):
-                    v = m[(m.task == task) & (m.model == mod) & (m.eval_set == es) & (m.metric == metric)
-                          & (m.calib == calib)].value
-                    row.append(f3(v.mean()) if len(v) else "--")
-        lines.append(" & ".join(row) + r" \\")
-    write("bserror", lines)
-
-
 def collapse() -> None:
-    t = pd.read_csv(TAB / "tableB_collapse.csv")
-    t = t[t.constant]
-    lab_fmt = {"gold": "gold", "open_teacher": "open teacher", "frontier_teacher": "frontier teacher",
-               "mix250_open_teacher": "250 gold + open", "mix1000_open_teacher": "1k gold + open"}
+    """Supplement Table S5: All constant-predictor runs across main + ablation sweeps."""
+    t = pd.read_csv(REV / "collapse_revision.csv")
+    lab_fmt = {
+        "gold": "gold", "open_teacher": "open teacher", "frontier_teacher": "frontier teacher",
+        "mix250_open_teacher": "250 gold + open", "mix1000_open_teacher": "1k gold + open",
+    }
     lines = []
     for r in t.sort_values(["task", "model", "labels", "n", "seed"]).to_dict("records"):
-        lbl = lab_fmt.get(r["labels"], r["labels"].replace("_", " "))
-        lines.append(" & ".join([TASKS[r["task"]], NAME[r["model"]], lbl, budget(r["n"]),
-                                 str(r["seed"]), r["tag"] if isinstance(r["tag"], str) else "main",
-                                 f"{r['test_score_sd']:.5f}"]) + r" \\")
+        lbl = lab_fmt.get(r["labels"], str(r["labels"]).replace("_", " "))
+        tag_str = r["tag"] if isinstance(r["tag"], str) and r["tag"] else "main"
+        lines.append(" & ".join([
+            TASKS[r["task"]], NAME[r["model"]], lbl, budget(r["n"]),
+            str(int(r["seed"])), tag_str, f"{r['test_score_sd']:.5f}",
+        ]) + r" \\")
     write("collapse", lines)
 
 
 def compute() -> None:
-    t = pd.read_csv(TAB / "tableG_compute.csv")
+    """Appendix G Table: Full run and compute accounting including revision experiments."""
+    t = pd.read_csv(REV / "compute_revision.csv")
     lines = []
     for fam in ("classical", "encoder", "decoder", "detector", "all"):
         r = t[(t.family == fam) & (t.task == "all")]
         if r.empty:
             continue
         r = r.iloc[0]
-        lines.append(" & ".join([fam.capitalize(), f"{int(r.runs):,}", f"{r.gpu_hours:.1f}", f"{r.cpu_hours:.2f}",
-                                 f"{r.energy_kwh:.1f}", f"{r.co2e_kg:.1f}", f"{r.usd_run_time:.2f}"]) + r" \\")
+        if fam == "all":
+            lines.append(r"\midrule")
+        lines.append(" & ".join([
+            "Total" if fam == "all" else fam.capitalize(),
+            f"{int(r.runs):,}".replace(",", "{,}"),
+            f"{r.gpu_hours:,.1f}".replace(",", "{,}"),
+            f"{r.cpu_hours:.2f}",
+            f"{r.energy_kwh:,.1f}".replace(",", "{,}"),
+            f"{r.co2e_kg:,.1f}".replace(",", "{,}"),
+            f"{r.usd_run_time:,.2f}".replace(",", "{,}"),
+        ]) + r" \\")
     write("compute", lines)
 
 
 def ablations() -> None:
-    """Range (min to max) over cells of ablation minus main configuration, per ablation and model."""
+    """Supplement Table S6: Design-choice ablations including no-guideline prompt and T1 encoder LR sweep."""
     t = pd.read_csv(TAB / "tableD_ablations.csv")
-    title = {"abl-head": "Classification head instead of $P(\\text{Yes})$", "abl-sft": "Full fine-tuning instead of LoRA",
-             "abl-chunk": "Chunk-and-pool (T1)", "abl-goldx2": "Gold anchor weighted $\\times2$",
-             "abl-honest": "Budget-honest validation", "abl-norefusal": "Refused items dropped"}
+    title = {
+        "abl-head": "Classification head instead of $P(\\text{Yes})$",
+        "abl-sft": "Full fine-tuning instead of LoRA",
+        "abl-chunk": "Chunk-and-pool (T1)",
+        "abl-goldx2": "Gold anchor weighted $\\times2$",
+        "abl-honest": "Budget-honest validation",
+        "abl-norefusal": "Refused items dropped",
+    }
     lines = []
     for tag, label in title.items():
         g = t[t.tag == tag]
@@ -336,16 +579,194 @@ def ablations() -> None:
                     d = r[(r.metric == metric) & (r.eval_set == es)]["diff"]
                     row.append("--" if d.empty else f"{neg(d.min())} to {neg(d.max())}")
             lines.append(" & ".join(row) + r" \\")
+
+    # Append Phase 1 No-guideline ablation (Qwen3.5-2B, 9 cells = 3 tasks x 3 budgets)
+    ni = pd.read_csv(REV / "noinstr.csv")
+    if len(ni):
+        lines.append(r"\multicolumn{6}{@{}l}{\emph{No-guideline minimal prompt ($N\in\{100,1{,}000,5{,}000\}$, gold)}} \\")
+        for nb_label, sub in (("Qwen3.5-2B ($N=100$)", ni[ni.n == 100]),
+                              ("Qwen3.5-2B ($N\\in\\{1\\text{k},5\\text{k}\\}$)", ni[ni.n >= 1000])):
+            row = [nb_label, str(sub[["task", "n"]].drop_duplicates().shape[0])]
+            for metric in ("pr_auc", "ece"):
+                for es in ("test", "shift"):
+                    d = sub[(sub.metric == metric) & (sub.eval_set == es)]["diff"]
+                    row.append("--" if d.empty else f"{neg(d.min())} to {neg(d.max())}")
+            lines.append(" & ".join(row) + r" \\")
+
+    # Append Phase 1 T1 Encoder LR check (N=8,651, gold, 3 seeds each)
+    lr = pd.read_csv(REV / "lr_check.csv")
+    if len(lr):
+        lines.append(r"\multicolumn{6}{@{}l}{\emph{T1 encoder learning-rate sensitivity at $N=8{,}651$ (change vs selected LR)}} \\")
+        for mod in ("modernbert_base", "modernbert_large", "deberta_v3_large"):
+            sub_m = lr[lr.model == mod]
+            sel = sub_m[sub_m.setting == "selected"].set_index(["eval_set", "metric"])["mean"]
+            alt = sub_m[sub_m.setting != "selected"]
+            row = [NAME[mod], "2"]
+            for metric in ("pr_auc",):
+                for es in ("test", "shift_api"):
+                    diffs = [float(r.mean - sel.loc[(es, metric)]) for r in alt[(alt.eval_set == es) & (alt.metric == metric)].itertuples()]
+                    row.append("--" if not diffs else f"{neg(min(diffs))} to {neg(max(diffs))}")
+            # For ECE columns, show val-thr F1 change vs selected LR
+            for es in ("test", "shift_api"):
+                diffs = [float(r.mean - sel.loc[(es, "f1_valthr")]) for r in alt[(alt.eval_set == es) & (alt.metric == "f1_valthr")].itertuples()]
+                row.append("--" if not diffs else f"{neg(min(diffs))} to {neg(max(diffs))}$^\\flat$")
+            lines.append(" & ".join(row) + r" \\")
     write("ablations", lines)
 
 
+def teacher_family_supp() -> None:
+    """Supplement Table S7: Same-family (Qwen3.5-2B) vs cross-family (Gemma 4 E2B) distillation gap comparison."""
+    tf = pd.read_csv(REV / "teacher_family.csv")
+    sub = tf[tf.metric == "pr_auc"]
+    lines = []
+    for teacher, tlabel in (("open_teacher", "Open teacher (Qwen3.5-9B; same family as Qwen3.5-2B, cross family to Gemma 4 E2B)"),
+                            ("frontier_teacher", "Frontier teacher (GPT-6.1 Sol; cross family to both students)")):
+        if lines:
+            lines.append(r"\midrule")
+        lines.append(rf"\multicolumn{{7}}{{@{{}}l}}{{\emph{{{tlabel}}}}} \\")
+        g = sub[sub.teacher == teacher]
+        for r in g.sort_values(["task", "n", "eval_set"]).to_dict("records"):
+            es_lbl = "ID" if r["eval_set"] == "test" else "Shift"
+            lines.append(" & ".join([
+                TASKS[r["task"]], es_lbl, budget(r["n"]),
+                neg(r["cost_qwen"]), neg(r["cost_gemma"]),
+                neg(r["family_diff"]), f"[{neg(r['lo'])}, {neg(r['hi'])}]",
+            ]) + r" \\")
+    write("teacher_family_supp", lines)
+
+
+def precision_drift_supp() -> None:
+    """Supplement Table S8: Realized precision/recall at target precision 0.90 + Saerens EM prior-shift adjustment."""
+    ps = pd.read_csv(REV / "prior_shift_precision_summary.csv")
+    lines = []
+    blocks = [
+        ("Unadjusted validation threshold ($\\pi^\\star = 0.90$)", "validation"),
+        ("Saerens et al.\\ EM prior-shift adjustment (label-free $\\hat\\pi_{\\mathrm{EM}}$)", "prior_adjusted"),
+        ("Oracle prior-shift adjustment (true target prevalence $\\pi_{\\mathcal{T}}$)", "prior_oracle"),
+    ]
+    for idx, (title, method) in enumerate(blocks):
+        if idx > 0:
+            lines.append(r"\midrule")
+        lines.append(rf"\multicolumn{{7}}{{@{{}}l}}{{\emph{{{title}}}}} \\")
+        sub = ps[ps.method == method]
+        for mod in TRAINED:
+            row = [NAME[mod]]
+            for task in TASKS:
+                for es in ("test", "shift"):
+                    r = sub[(sub.task == task) & (sub.model == mod) & (sub.eval_set == es)]
+                    if r.empty:
+                        row.append("--")
+                    else:
+                        ri = r.iloc[0]
+                        row.append(f"{f3(ri.precision)} / {f3(ri.recall)}")
+            lines.append(" & ".join(row) + r" \\")
+    write("precision_drift_supp", lines)
+
+
+def t2_overlap_supp() -> None:
+    """Supplement Table S9: BeaverTails (T2) prompt-overlap share by budget and unseen-prompt break-even sensitivity."""
+    rn = json.loads((REV / "revision_numbers.json").read_text())
+    t2o = rn["t2_overlap"]
+    lines = [r"\multicolumn{5}{@{}l}{\emph{Share of T2 in-distribution test items (3,021) whose prompt appears in $\mathcal{D}_N$ (WildGuardTest: 0.0\% at all $N$)}} \\"]
+    for n in (100, 250, 500, 1000, 2000, 5000, 10000, 20000):
+        ov = t2o[f"overlap/test/n{n}"]
+        lines.append(" & ".join([
+            f"$N = {budget(n)}$",
+            f"{100.0 * ov['mean']:.1f}\\%",
+            f"[{100.0 * ov['min']:.1f}\\%, {100.0 * ov['max']:.1f}\\%]",
+            "--", "--",
+        ]) + r" \\")
+    lines.append(r"\midrule")
+    lines.append(r"\multicolumn{5}{@{}l}{\emph{Trained-only T2 ID break-even $N^\star_{\mathrm{mean}}$ ($N\ge 100$; 4B grid starts at $1{,}000$; at $N=0$ overlap is $0\%$)}} \\")
+    for mod in TRAINED:
+        b_all = budget(t2o[f"breakeven/{mod}/f1_valthr/all"])
+        b_uns = budget(t2o[f"breakeven/{mod}/f1_valthr/unseen"])
+        b_nmax = budget(t2o[f"breakeven/{mod}/f1_valthr/unseen_at_nmax"])
+        b_05 = budget(t2o[f"breakeven/{mod}/f1_at_05/unseen"])
+        lines.append(" & ".join([NAME[mod], b_all, b_uns, b_nmax, b_05]) + r" \\")
+    write("t2_overlap_supp", lines)
+
+
+NEURAL = ["modernbert_base", "modernbert_large", "deberta_v3_large", "gemma4_e2b", "qwen35_2b", "gemma4_e4b", "qwen35_4b"]
+N_SHIFT = {"t1_rag_hallucination": 3000, "t2_response_safety": 1709, "t3_implicit_toxicity": 2108}
+
+
+def _neg_rate(task: str) -> float:
+    exch = pd.read_csv(REV / "drift_exchangeability_band.csv")
+    r = exch[(exch.task == task) & (exch.eval_set == "shift")].iloc[0]
+    return float(r.n_test_neg) / N_SHIFT[task]
+
+
+def recal_main() -> None:
+    """Table 9 (main): target-negative recalibration on the shifted sets, summarized over the seven neural models."""
+    rc = pd.read_csv(REV / "recal_target_negatives_summary.csv")
+    rc = rc[rc.model.isin(NEURAL) & (rc.m > 0)]
+    lines = []
+    for task, tl in TASKS.items():
+        nr = _neg_rate(task)
+        for i, m in enumerate((50, 100, 200)):
+            g = rc[(rc.task == task) & (rc.m == m)]
+            lab = f"{tl} shift" if i == 0 else ""
+            lines.append(" & ".join([
+                lab, str(m),
+                f"{g.fpr.min():.3f}--{g.fpr.max():.3f}",
+                f"{g.fpr_p05.min():.3f}--{g.fpr_p95.max():.3f}",
+                f"{100 * g.p_over_target.min():.0f}--{100 * g.p_over_target.max():.0f}",
+                f"{g.recall.min():.2f}--{g.recall.max():.2f}",
+                f"{m / nr:,.0f}".replace(",", "{,}"),
+            ]) + r" \\")
+        if task != list(TASKS)[-1]:
+            lines.append(r"\midrule")
+    write("recal_main", lines)
+
+
+def recal_full_supp() -> None:
+    """Supplement Table S11: per-model target-negative recalibration (mean FPR [5th, 95th pct], % draws above alpha, recall)."""
+    rc = pd.read_csv(REV / "recal_target_negatives_summary.csv")
+    lines = []
+    for task, tl in TASKS.items():
+        nr = _neg_rate(task)
+        items = " / ".join(f"{m / nr:,.0f}" for m in (50, 100, 200)).replace(",", "{,}")
+        lines.append(rf"\multicolumn{{10}}{{@{{}}l}}{{\emph{{{tl} shifted set (negative rate {nr:.3f}; labelled items to obtain $m=50/100/200$ negatives: {items})}}}} \\")
+        for mod in NEURAL:
+            row = [NAME[mod]]
+            for m in (50, 100, 200):
+                r = rc[(rc.task == task) & (rc.model == mod) & (rc.m == m)].iloc[0]
+                row += [f"{r.fpr:.3f} [{r.fpr_p05:.3f}, {r.fpr_p95:.3f}]", f"{100 * r.p_over_target:.0f}", f"{r.recall:.2f}"]
+            lines.append(" & ".join(row) + r" \\")
+        if task != list(TASKS)[-1]:
+            lines.append(r"\midrule")
+    write("recal_full_supp", lines)
+
+
+def valsub_supp() -> None:
+    """Supplement Table S10: N=0 decoders with tau chosen on random subsets of the gold validation set V (T1/T2/T3 ID)."""
+    vs = pd.read_csv(REV / "zeroshot_val_subsets.csv")
+    vs = vs[vs.eval_set == "test"]
+    lines = []
+    for mod in DECODER_LIST:
+        for m in (0, 50, 100, 200, 500, 1000):
+            row = [NAME[mod] if m == 0 else "", {0: r"0 ($\tau=0.5$)", 1000: "1,000 (full $\\mathcal{V}$)"}.get(m, str(m))]
+            for task in TASKS:
+                g = vs[(vs.task == task) & (vs.model == mod)]
+                if m == 0:
+                    row += [f"{g.f1_raw05.iloc[0]:.3f}", "--"]
+                elif m == 1000:
+                    row += [f"{g.f1_full_v.iloc[0]:.3f}", "--"]
+                else:
+                    r = g[g.m == m].iloc[0]
+                    row += [f"{r.f1_mean:.3f} [{r.f1_p05:.3f}, {r.f1_p95:.3f}]", f"{r.p_ge_ref:.2f}"]
+            lines.append(" & ".join(row) + r" \\")
+        if mod != DECODER_LIST[-1]:
+            lines.append(r"\midrule")
+    write("valsub_supp", lines)
+
+
 def main() -> int:
-    for f in (breakeven, teachers, gaps, drift, references, serving, comparisons, breakeven_weaker, bserror,
-              collapse, compute, ablations):
-        try:
-            f()
-        except FileNotFoundError as e:
-            write(f.__name__, [rf"\multicolumn{{2}}{{l}}{{\textcolor{{red}}{{pending: {Path(e.filename).name}}}}} \\"])
+    for f in (references, breakeven, breakeven_weaker, teachers, gaps, calibration_main, bserror,
+              drift, serving, comparisons, collapse, compute, ablations, teacher_family_supp,
+              precision_drift_supp, t2_overlap_supp, recal_main, recal_full_supp, valsub_supp):
+        f()
     return 0
 
 
